@@ -57,7 +57,7 @@ if ($endpoint === '/authorize') {
 		redirect_error($uri, 'unsupported_response_type', 'i only support response_type=code');
 	}
 
-	$tok = new Token(TokenType::OAuthorization, $serviceName, time(), 'testuser');
+	$tok = new Token(TokenType::OAuthorization, $serviceName, time(), 'testuser', '0');
 	redirect_back($uri, array(
 		'code' => $tok->export(),
 	));
@@ -100,7 +100,7 @@ if ($endpoint === '/authorize') {
 	 *
 	 * I'm not doing that. This is not very good software. */
 
-	$tokAcc = new Token(TokenType::OAccess, $tokAuth->service, time(), $tokAuth->user);
+	$tokAcc = new Token(TokenType::OAccess, $tokAuth->service, time(), $tokAuth->user, $tokAuth->generation);
 	echo json_encode(array(
 		'access_token' => $tokAcc->export(),
 		'token_type' => 'Bearer',
@@ -122,14 +122,16 @@ if ($endpoint === '/authorize') {
 		header('WWW-Authenticate: Bearer error="invalid_token"');
 		die();
 	}
+	$data = UserDb::getInstance()->lookup($tok->user);
 	echo json_encode(array(
-		// 'user_id' => '???',
-		'login' => $tok->user,
-		// 'first_name' => '',
-		// 'last_name' => '',
-		// 'email' => '',
-		// 'start_year' => 1970,
-		'groups' => ['students'],
+		'user_id'    => $data['legacyid'],
+		'login'      => $tok->user,
+
+		'first_name' => $data['first_name'],
+		'last_name'  => $data['last_name'],
+		'email'      => $data['email'],
+		'start_year' => $data['start_year'],
+		'groups'     => $data['groups'],
 	));
 } else {
 	http_response_code(404);

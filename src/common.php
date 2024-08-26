@@ -20,18 +20,24 @@ class Token
 	public string    $service;
 	public int       $time; /* creation time */
 	public string    $user;
+	public string    $generation;
 
-	public function __construct(TokenType $type, string $service, int $time, string $user) {
-		$this->type    = $type;
-		$this->service = $service;
-		$this->time    = $time;
-		$this->user    = $user;
+	public function __construct(
+		TokenType $type, string $service, int $time,
+		string $user, string $generation
+	) {
+		$this->type       = $type;
+		$this->service    = $service;
+		$this->time       = $time;
+		$this->user       = $user;
+		$this->generation = $generation;
 	}
 
 	protected function has_illegal_chars() {
-		return str_contains($type->value, ':')
+		return str_contains($this->type->value, ':')
 			|| str_contains($this->service, ':')
-			|| str_contains($this->user, ':');
+			|| str_contains($this->user, ':')
+			|| str_contains($this->generation, ':');
 	}
 
 	/**
@@ -46,7 +52,8 @@ class Token
 		$tok = $this->type->value . ':'
 		     . $this->service . ':'
 		     . $this->time . ':'
-		     . $this->user;
+		     . $this->user . ':'
+		     . $this->generation;
 		$mac = hash_hmac('sha256', $tok, $conf['token_secret']);
 		return $mac . ':' . $tok;
 	}
@@ -63,8 +70,11 @@ class Token
 			return null;
 		}
 
-		[$usertype, $service, $time, $user] = explode(':', $tok, 4);
-		$obj = new Token(TokenType::from($usertype), $service, $time, $user);
+		[$usertype, $service, $time, $user, $gen] = explode(':', $tok, 5);
+		if ($gen === null) {
+			return null;
+		}
+		$obj = new Token(TokenType::from($usertype), $service, $time, $user, $gen);
 
 		// Let's validate it.
 		if ($obj->has_illegal_chars()) {
@@ -75,6 +85,9 @@ class Token
 		}
 		if ($obj->time + $obj->maxlifetime() < time()) {
 			return null;
+		}
+		if (!UserDB::getInstance()->check_generation($user, $gen)) {
+			return null; // This token was born in the wrong generation
 		}
 
 		return $obj;
@@ -87,3 +100,4 @@ class Token
 }
 
 $conf = require(__DIR__ . '/../config.php');
+require(__DIR__ . '/userdb.php');
