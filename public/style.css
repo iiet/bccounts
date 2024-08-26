@@ -1,0 +1,36 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: sans-serif;
+  background: #999;
+}
+
+form {
+  border: 2px solid black;
+  border-radius: 1em;
+  box-shadow: black 8px 8px 0px;
+  padding: 1em;
+  max-width: 25em;
+  margin: 10em auto;
+  background: #f0f0f0;
+  font-size: .9rem;
+}
+
+input {
+  width: 100%;
+}
+
+label, #forgotpass {
+  display: block;
+}
+
+#forgotpass {
+  text-align: right;
+}
+
+form .error {
+  margin-bottom: 1em;
+  font-weight: bold;
+}

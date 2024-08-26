@@ -99,5 +99,66 @@ class Token
 	}
 }
 
+abstract class MySession
+{
+	private static ?Token $token = null;
+	private static bool $tokenCached = false;
+
+	public static function setToken(Token $tok): void {
+		global $conf;
+		assert($tok->type === TokenType::Session);
+		assert($tok->service === '');
+		setcookie($conf['cookie'], $tok->export(), array(
+			'expires' => $tok->time + $tok->maxlifetime(),
+			'httponly' => true,
+			'secure' => true,
+		));
+		self::$token = $tok;
+		self::$tokenCached = true;
+	}
+
+	public static function unsetToken(): void {
+		global $conf;
+		setcookie($conf['cookie'], '', array(
+			'expires' => 1,
+			'httponly' => true,
+			'secure' => true,
+		));
+		self::$token = null;
+		self::$tokenCached = true;
+	}
+
+	public static function getToken(): ?Token {
+		global $conf;
+		if (!self::$tokenCached) {
+			self::$tokenCached = true;
+			$cookie = @$_COOKIE[$conf['cookie']];
+			if ($cookie) {
+				self::$token = Token::accept($cookie, TokenType::Session);
+			}
+		}
+		return self::$token;
+	}
+
+	public static function tryRefresh(): void {
+		$token = self::getToken();
+		if (!$token) return;
+		// TODO maybe I should only refresh tokens of a certain age?
+		self::setToken(new Token(
+			TokenType::Session, '', time(), $token->user, $token->generation
+		));
+	}
+
+	// Not directly related to managing sessions, but useful enough.
+	public static function requireLogin(): void {
+		if (self::getToken() !== null) return;
+		echo '<pre>';
+		$uri = '/login.php?redir=' . urlencode($_SERVER['REQUEST_URI']);
+		header('Location: ' . $uri);
+		die();
+	}
+}
+
 $conf = require(__DIR__ . '/../config.php');
+require(__DIR__ . '/template.php');
 require(__DIR__ . '/userdb.php');

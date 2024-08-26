@@ -3,6 +3,9 @@
 return array(
 	'token_secret' => 'penis',
 
+	/* The name of the cookie used to store the session token. */
+	'cookie' => 'bccounts_token',
+
 	'services' => array(
 		// the key is user-visible, used in e.g. tokens
 		'enroll' => array(
@@ -32,5 +35,7 @@ return array(
 		TokenType::OAuthorization->value => 30,
 
 		TokenType::OAccess->value        => 24 * 60 * 60,
+
+		TokenType::Session->value        => 6 * 30 * 24 * 60 * 60,
 	),
 );

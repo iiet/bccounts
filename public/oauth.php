@@ -41,6 +41,11 @@ header('Pragma: no-cache');
 
 $endpoint = $_SERVER['PATH_INFO'];
 if ($endpoint === '/authorize') {
+	MySession::requireLogin();
+	MySession::tryRefresh();
+	$sessToken = MySession::getToken();
+	assert($sessToken !== null);
+
 	[$serviceName, $service] = find_service(@$_GET['client_id']);
 	if (!$serviceName) {
 		http_response_code(403);
@@ -57,7 +62,10 @@ if ($endpoint === '/authorize') {
 		redirect_error($uri, 'unsupported_response_type', 'i only support response_type=code');
 	}
 
-	$tok = new Token(TokenType::OAuthorization, $serviceName, time(), 'testuser', '0');
+	$tok = new Token(
+		TokenType::OAuthorization, $serviceName, time(),
+		$sessToken->user, $sessToken->generation
+	);
 	redirect_back($uri, array(
 		'code' => $tok->export(),
 	));
