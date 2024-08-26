@@ -8,8 +8,11 @@
 	<link rel="stylesheet" href="style.css">
 </head>
 <body>
+<main>
+<h1><a href="/">iiet.pl</a></h1>
 <?php }
 function html_footer() { ?>
+</main>
 </body>
 </html>
 <?php } ?>
