@@ -11,53 +11,79 @@ enum TokenType: string
 	case Session        = "s";
 }
 
-class TokenManager
+/**
+ * Represents an authenticated, valid "token" verifying permission to do
+ * something as the user. Used for OAuth2 tokens, and for the session tokens (TODO). */
+class Token
 {
-	private string $secret;
+	public TokenType $type;
+	public string    $service;
+	public int       $time; /* creation time */
+	public string    $user;
 
-	public function __construct(string $secret) {
-		$this->secret = $secret;
+	public function __construct(TokenType $type, string $service, int $time, string $user) {
+		$this->type    = $type;
+		$this->service = $service;
+		$this->time    = $time;
+		$this->user    = $user;
 	}
 
-	public function create(TokenType $type, string $service, string $user) {
-		if (str_contains($service, ":") || str_contains($user, ":")) {
-			http_response_code(500);
-			die("Tried to generate a bad token. Something is fucked.");
+	protected function has_illegal_chars() {
+		return str_contains($type->value, ":")
+			|| str_contains($this->service, ":")
+			|| str_contains($this->user, ":");
+	}
+
+	/**
+	 * Serializes and signs the token.
+	 */
+	public function export(): string {
+		global $conf;
+		if ($this->has_illegal_chars()) {
+			// TODO exceptions?
+			die("Tried to create a bad token, something is fucked.");
 		}
-		if (str_contains($type->value, ":")) {
-			http_response_code(500);
-			die("Something is really fucked.");
-		}
-		$tok = $type->value . ":" . $service . ":" . time() . ":" . $user;
-		$mac = hash_hmac("sha256", $tok, $this->secret);
+		$tok = $this->type->value . ":"
+		     . $this->service . ":"
+		     . $this->time . ":"
+		     . $this->user;
+		$mac = hash_hmac("sha256", $tok, $conf["token_secret"]);
 		return $mac . ":" . $tok;
 	}
 
 	/**
-	 * Validates an untrusted token and checks if it's the expected type.
-	 * If it is - returns the data stored in the token.
+	 * Validates an exported token and checks if it's the expected type.
+	 * If it is - returns the parsed token.
 	 */
-	public function accept(string $tok, TokenType $type) {
+	public static function accept(string $fulltok, TokenType $type): ?Token {
 		global $conf;
-		[$usermac, $usertype, $service, $time, $login] = explode(":", $tok, 5);
-		if (str_contains($login, ":")) return false;
-
-		// yeah, this is a bit stupid, but I want this to look as close
-		// to the hmac gen as possible
-		$rawtok = $usertype . ":" . $service . ":" . $time . ":" . $login;
-		$mac = hash_hmac("sha256", $rawtok, $this->secret);
+		[$usermac, $tok] = explode(":", $fulltok, 2);
+		$mac = hash_hmac("sha256", $tok, $conf["token_secret"]);
 		if (!hash_equals($mac, $usermac)) {
-			return false;
+			return null;
 		}
 
-		// now let's validate it
-		$expiry = $conf["expires"][$type->value];
-		if ($usertype !== $type->value) return false;
-		if (intval($time) + $expiry < time()) return false;
+		[$usertype, $service, $time, $user] = explode(":", $tok, 4);
+		$obj = new Token(TokenType::from($usertype), $service, $time, $user);
 
-		return [$service, $login];
+		// Let's validate it.
+		if ($obj->has_illegal_chars()) {
+			die("Successfully validated an illegal token?");
+		}
+		if ($obj->type !== $type) {
+			return null;
+		}
+		if ($obj->time + $obj->maxlifetime() < time()) {
+			return null;
+		}
+
+		return $obj;
+	}
+
+	public function maxlifetime(): int {
+		global $conf;
+		return $conf["expires"][$this->type->value];
 	}
 }
 
 $conf = require(__DIR__ . "/../config.php");
-$tokmgr = new TokenManager($conf["token_secret"]);

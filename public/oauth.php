@@ -57,9 +57,9 @@ if ($endpoint === "/authorize") {
 		redirect_error($uri, "unsupported_response_type", "i only support response_type=code");
 	}
 
-	$tok = $tokmgr->create(TokenType::OAuthorization, $serviceName, "testuser");
+	$tok = new Token(TokenType::OAuthorization, $serviceName, time(), "testuser");
 	redirect_back($uri, array(
-		"code" => $tok,
+		"code" => $tok->export(),
 	));
 } else if ($endpoint === "/token") { // RFC6749, 4.4.
 	header("Content-Type: application/json;charset=UTF-8");
@@ -87,8 +87,8 @@ if ($endpoint === "/authorize") {
 	}
 
 	// TODO a separate error for the token expiring would be nice
-	[$tokService, $tokUser] = $tokmgr->accept(@$_POST["code"], TokenType::OAuthorization);
-	if (!$tokService || $tokService !== $serviceName) {
+	$tokAuth = Token::accept(@$_POST["code"], TokenType::OAuthorization);
+	if (!$tokAuth || $tokAuth->service !== $serviceName) {
 		json_error(400, "invalid_grant", null);
 	}
 
@@ -100,30 +100,32 @@ if ($endpoint === "/authorize") {
 	 *
 	 * I'm not doing that. This is not very good software. */
 
+	$tokAcc = new Token(TokenType::OAccess, $tokAuth->service, time(), $tokAuth->user);
 	echo json_encode(array(
-		"access_token" => $tokmgr->create(TokenType::OAccess, $tokService, $tokUser),
+		"access_token" => $tokAcc->export(),
+		"access_token2" => $tokAcc,
 		"token_type" => "Bearer",
-		"expires_in" => $conf["expires"][TokenType::OAccess->value],
+		"expires_in" => $tokAcc->maxlifetime(),
 		// TODO refresh tokens
 		// "refresh_token" => $tokmgrcreate(TokenType:ORefresh, $tokService, $tokUser),
 	));
 } else if ($endpoint === "/userinfo") {
 	// Bearer is described in RFC6750
-	[$method, $token] = explode(" ", @$_SERVER["HTTP_AUTHORIZATION"], 2);
+	[$method, $rawtok] = explode(" ", @$_SERVER["HTTP_AUTHORIZATION"], 2);
 	if ($method !== "Bearer") {
 		http_response_code(401);
 		header("WWW-Authenticate: Bearer");
 		die();
 	}
-	[$tokService, $tokUser] = $tokmgr->accept($token, TokenType::OAccess);
-	if (!$tokService) {
+	$tok = Token::accept($rawtok, TokenType::OAccess);
+	if (!$tok) {
 		http_response_code(401);
 		header('WWW-Authenticate: Bearer error="invalid_token"');
 		die();
 	}
 	echo json_encode(array(
 		// "user_id" => "???",
-		"login" => $tokUser,
+		"login" => $tok->user,
 		// "first_name" => "",
 		// "last_name" => "",
 		// "email" => "",
