@@ -1,28 +1,28 @@
 <?php
 
 return array(
-	"token_secret" => "penis",
+	'token_secret' => 'penis',
 
-	"services" => array(
+	'services' => array(
 		// the key is user-visible, used in e.g. tokens
-		"enroll" => array(
-			"url" => "/^https:\/\/enroll-me.iiet.pl\//",
-			"cid" => "enroll",
-			"secret" => "blahblah",
+		'enroll' => array(
+			'url' => '/^https:\/\/enroll-me.iiet.pl\//',
+			'cid' => 'enroll',
+			'secret' => 'blahblah',
 		),
-		"test" => array(
-			"url" => "/^https:\/\/oauthdebugger.com\//",
-			"cid" => "testasdf",
-			"secret" => "{clientSecret}",
+		'test' => array(
+			'url' => '/^https:\/\/oauthdebugger.com\//',
+			'cid' => 'testasdf',
+			'secret' => '{clientSecret}',
 		),
 		/* user visible key => array(
-		 *     "url" => regex that matches the allowed redirect urls,
-		 *     "cid" => client id,
+		 *     'url' => regex that matches the allowed redirect urls,
+		 *     'cid' => client id,
 		 * )
 		 */
 	),
 
-	"expires" => array(
+	'expires' => array(
 		/* I'm using ->value because PHP doesn't support using enum values as
 		 * array keys. */
 

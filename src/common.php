@@ -3,12 +3,12 @@
 enum TokenType: string
 {
 	/* tokens used for OAuth: */
-	case OAuthorization = "a";
-	case OAccess        = "c";
-	case ORefresh       = "r";
+	case OAuthorization = 'a';
+	case OAccess        = 'c';
+	case ORefresh       = 'r';
 
 	/* tokens used for the session: */
-	case Session        = "s";
+	case Session        = 's';
 }
 
 /**
@@ -29,9 +29,9 @@ class Token
 	}
 
 	protected function has_illegal_chars() {
-		return str_contains($type->value, ":")
-			|| str_contains($this->service, ":")
-			|| str_contains($this->user, ":");
+		return str_contains($type->value, ':')
+			|| str_contains($this->service, ':')
+			|| str_contains($this->user, ':');
 	}
 
 	/**
@@ -41,14 +41,14 @@ class Token
 		global $conf;
 		if ($this->has_illegal_chars()) {
 			// TODO exceptions?
-			die("Tried to create a bad token, something is fucked.");
+			die('Tried to create a bad token, something is fucked.');
 		}
-		$tok = $this->type->value . ":"
-		     . $this->service . ":"
-		     . $this->time . ":"
+		$tok = $this->type->value . ':'
+		     . $this->service . ':'
+		     . $this->time . ':'
 		     . $this->user;
-		$mac = hash_hmac("sha256", $tok, $conf["token_secret"]);
-		return $mac . ":" . $tok;
+		$mac = hash_hmac('sha256', $tok, $conf['token_secret']);
+		return $mac . ':' . $tok;
 	}
 
 	/**
@@ -57,18 +57,18 @@ class Token
 	 */
 	public static function accept(string $fulltok, TokenType $type): ?Token {
 		global $conf;
-		[$usermac, $tok] = explode(":", $fulltok, 2);
-		$mac = hash_hmac("sha256", $tok, $conf["token_secret"]);
+		[$usermac, $tok] = explode(':', $fulltok, 2);
+		$mac = hash_hmac('sha256', $tok, $conf['token_secret']);
 		if (!hash_equals($mac, $usermac)) {
 			return null;
 		}
 
-		[$usertype, $service, $time, $user] = explode(":", $tok, 4);
+		[$usertype, $service, $time, $user] = explode(':', $tok, 4);
 		$obj = new Token(TokenType::from($usertype), $service, $time, $user);
 
 		// Let's validate it.
 		if ($obj->has_illegal_chars()) {
-			die("Successfully validated an illegal token?");
+			die('Successfully validated an illegal token?');
 		}
 		if ($obj->type !== $type) {
 			return null;
@@ -82,8 +82,8 @@ class Token
 
 	public function maxlifetime(): int {
 		global $conf;
-		return $conf["expires"][$this->type->value];
+		return $conf['expires'][$this->type->value];
 	}
 }
 
-$conf = require(__DIR__ . "/../config.php");
+$conf = require(__DIR__ . '/../config.php');
