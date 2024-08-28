@@ -6,6 +6,10 @@ return array(
 	/* The name of the cookie used to store the session token. */
 	'cookie' => 'bccounts_token',
 
+	'pdo_dsn' => 'sqlite:/home/dzwdz/src/bccounts/bccounts.db',
+	'pdo_user' => null,
+	'pdo_pass' => null,
+
 	'services' => array(
 		// the key is user-visible, used in e.g. tokens
 		'enroll' => array(

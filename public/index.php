@@ -2,9 +2,9 @@
 require(__DIR__ . '/../src/common.php');
 
 MySession::requireLogin();
-MySession::tryRefresh();
 $sessToken = MySession::getToken();
-$userinfo = UserDB::getInstance()->lookup($sessToken->user);
+$userinfo = UserDB::getInstance()->getUser($sessToken->user);
+$groups = UserDB::getInstance()->getGroups($userinfo['id']);
 
 html_header('iiet.pl');
 ?>
@@ -16,7 +16,7 @@ html_header('iiet.pl');
 		<li class="list-group-item"><a href="https://wiki.iiet.pl/">EgzamWiki</a></li>
 		<li class="list-group-item"><a href="https://forum.iiet.pl/">Forum</a></li>
 		<li class="list-group-item"><a href="https://git.iiet.pl/">Gitlab</a></li>
-		<li class="list-group-item"><a href="https://chat.iiet.pl/">RocketChat</a></li>
+		<li class="list-group-item"><a href="https://chat.iiet.pl/">Gitlab</a></li>
 	</ul>
 </div>
 <div class="card w-100 my-4">
@@ -40,7 +40,7 @@ foreach ($data as $k => $name) {
 		<tr>
 			<th class="text-end">Grupy:</th>
 			<td>
-<?php foreach ($userinfo['groups'] as $group) {
+<?php foreach ($groups as $group) {
 	echo '<span class="badge bg-dark me-1">' . htmlspecialchars($group) . '</span>';
 } ?>
 			</td>

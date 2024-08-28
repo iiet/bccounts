@@ -20,24 +20,21 @@ class Token
 	public string    $service;
 	public int       $time; /* creation time */
 	public string    $user;
-	public string    $generation;
 
 	public function __construct(
 		TokenType $type, string $service, int $time,
-		string $user, string $generation
+		string $user
 	) {
 		$this->type       = $type;
 		$this->service    = $service;
 		$this->time       = $time;
 		$this->user       = $user;
-		$this->generation = $generation;
 	}
 
 	protected function has_illegal_chars() {
 		return str_contains($this->type->value, ':')
 			|| str_contains($this->service, ':')
-			|| str_contains($this->user, ':')
-			|| str_contains($this->generation, ':');
+			|| str_contains($this->user, ':');
 	}
 
 	/**
@@ -52,8 +49,7 @@ class Token
 		$tok = $this->type->value . ':'
 		     . $this->service . ':'
 		     . $this->time . ':'
-		     . $this->user . ':'
-		     . $this->generation;
+		     . $this->user;
 		$mac = hash_hmac('sha256', $tok, $conf['token_secret']);
 		return $mac . ':' . $tok;
 	}
@@ -70,11 +66,8 @@ class Token
 			return null;
 		}
 
-		[$usertype, $service, $time, $user, $gen] = explode(':', $tok, 5);
-		if ($gen === null) {
-			return null;
-		}
-		$obj = new Token(TokenType::from($usertype), $service, $time, $user, $gen);
+		[$usertype, $service, $time, $user] = explode(':', $tok, 4);
+		$obj = new Token(TokenType::from($usertype), $service, $time, $user);
 
 		// Let's validate it.
 		if ($obj->has_illegal_chars()) {
@@ -85,9 +78,6 @@ class Token
 		}
 		if ($obj->time + $obj->maxlifetime() < time()) {
 			return null;
-		}
-		if (!UserDB::getInstance()->check_generation($user, $gen)) {
-			return null; // This token was born in the wrong generation
 		}
 
 		return $obj;
@@ -140,15 +130,6 @@ abstract class MySession
 			}
 		}
 		return self::$token;
-	}
-
-	public static function tryRefresh(): void {
-		$token = self::getToken();
-		if (!$token) return;
-		// TODO maybe I should only refresh tokens of a certain age?
-		self::setToken(new Token(
-			TokenType::Session, '', time(), $token->user, $token->generation
-		));
 	}
 
 	// Not directly related to managing sessions, but useful enough.
