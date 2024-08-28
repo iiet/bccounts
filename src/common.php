@@ -111,6 +111,7 @@ abstract class MySession
 		setcookie($conf['cookie'], $tok->export(), array(
 			'expires' => $tok->time + $tok->maxlifetime(),
 			'httponly' => true,
+			'path' => '/',
 			'secure' => true,
 		));
 		self::$token = $tok;
@@ -122,6 +123,7 @@ abstract class MySession
 		setcookie($conf['cookie'], '', array(
 			'expires' => 1,
 			'httponly' => true,
+			'path' => '/',
 			'secure' => true,
 		));
 		self::$token = null;
