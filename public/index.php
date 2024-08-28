@@ -14,6 +14,9 @@ html_header('iiet.pl');
 	<ul class="list-group list-group-flush">
 		<li class="list-group-item"><a href="https://enroll-me.iiet.pl/">Enroll Me!</a></li>
 		<li class="list-group-item"><a href="https://wiki.iiet.pl/">EgzamWiki</a></li>
+		<li class="list-group-item"><a href="https://forum.iiet.pl/">Forum</a></li>
+		<li class="list-group-item"><a href="https://git.iiet.pl/">Gitlab</a></li>
+		<li class="list-group-item"><a href="https://chat.iiet.pl/">RocketChat</a></li>
 	</ul>
 </div>
 <div class="card w-100 my-4">
@@ -21,11 +24,11 @@ html_header('iiet.pl');
 	<table class="table">
 <?php
 $data = array(
-	"first_name" => "Imię",
-	"last_name" => "Nazwisko",
-	"email" => "Email",
-	"start_year" => "Rocznik",
-	"transcript_id" => "Indeks",
+	'first_name' => 'Imię',
+	'last_name' => 'Nazwisko',
+	'email' => 'Email',
+	'start_year' => 'Rocznik',
+	'transcript_id' => 'Indeks',
 );
 foreach ($data as $k => $name) {
 ?>
@@ -34,6 +37,14 @@ foreach ($data as $k => $name) {
 			<td><?= htmlspecialchars($userinfo[$k]) ?></td>
 		</tr>
 <?php } ?>
+		<tr>
+			<th class="text-end">Grupy:</th>
+			<td>
+<?php foreach ($userinfo['groups'] as $group) {
+	echo '<span class="badge bg-dark me-1">' . htmlspecialchars($group) . '</span>';
+} ?>
+			</td>
+		</tr>
 	</table>
 	<div class="card-body pt-0">
 		<a class="btn btn-outline-primary float-end" href="#">Zmień hasło</a>

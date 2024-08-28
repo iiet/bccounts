@@ -25,7 +25,7 @@ class UserDB
 			'email' => 'johnsmith@example.org',
 			'start_year' => 1970,
 			'transcript_id' => 696969,
-			'groups' => array('red', 'blue'),
+			'groups' => array('students', '1970-1971', 'infra', 'verylong', 'yeeeeeesh'),
 		);
 	}
 
