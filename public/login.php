@@ -27,16 +27,17 @@ if (MySession::getToken() !== null) {
 
 html_header('iiet.pl');
 ?>
-<form method="post">
+<form class="w-100" style="max-width: 400px;" method="post">
 	<?php if ($error) { ?>
-		<div class="error"> <?= $error ?> </div>
+		<div class="alert alert-danger"> <?= htmlspecialchars($error) ?> </div>
 	<?php } ?>
 	<label for="user">Login (lub email):</label>
-	<input type="text" name="user" required/>
-	<br><br>
+	<input type="text" name="user" class="form-control mb-2" required autofocus/>
 	<label for="pass">Hasło:</label>
-	<input type="password" name="pass" required/>
-	<a id="forgotpass" href="#">Zapomniałeś hasła?</a>
-	<button>Zaloguj się</button>
+	<input type="password" name="pass" class="form-control mb-3" required/>
+	<div class="d-flex flex-wrap justify-content-between align-items-center">
+		<button class="btn btn-primary">Zaloguj się</button>
+		<a id="forgotpass" href="#">Zapomniałeś hasła?</a>
+	</div>
 </form>
 <?php html_footer();
