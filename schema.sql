@@ -99,3 +99,11 @@ CREATE TABLE IF NOT EXISTS "tokens" (
 );
 CREATE INDEX IF NOT EXISTS "tokens_session"
 ON "tokens"("session");
+
+/* Notable omission: a clients table. The recognized clients are instead stored
+ * in config.php.
+ * The previous implementation stored the clients in the database too...
+ * and then the part of the webapp that managed the clients broke.
+ * In practice pretty much no user set up their own services, so we're not
+ * losing out on much, and being able to manage services is very important
+ * for various admin work - so I want it to be as simple as possible. */

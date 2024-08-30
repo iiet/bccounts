@@ -9,22 +9,15 @@ return array(
 	'pdo_pass' => null,
 
 	'services' => array(
-		// the key is user-visible, used in e.g. tokens
-		'enroll' => array(
-			'url' => '/^https:\/\/enroll-me.iiet.pl\//',
-			'cid' => 'enroll',
-			'secret' => 'blahblah',
-		),
+		// The key is used to identify the service internally and it might be
+		// visible to the user.
 		'test' => array(
-			'url' => '/^https:\/\/oauthdebugger.com\//',
-			'cid' => 'testasdf',
-			'secret' => '{clientSecret}',
+			// I'm intentionally only allowing one redirect URI per service.
+			// See: comment near the authorization_code handler in oauth.php
+			'redirect_uri' => 'https://oauthdebugger.com/debug',
+			'client_id' => 'testasdf',
+			'client_secret' => '{clientSecret}',
 		),
-		/* user visible key => array(
-		 *     'url' => regex that matches the allowed redirect urls,
-		 *     'cid' => client id,
-		 * )
-		 */
 	),
 
 	'expires' => array(

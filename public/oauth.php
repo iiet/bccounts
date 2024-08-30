@@ -34,7 +34,7 @@ function json_error(int $code, string $error, ?string $desc) {
 function find_service(string $client_id) {
 	global $conf;
 	foreach ($conf['services'] as $k => $service) {
-		if ($service['cid'] === $client_id) {
+		if ($service['client_id'] === $client_id) {
 			return [$k, $service];
 		}
 	}
@@ -59,13 +59,14 @@ if ($endpoint === '/authorize') {
 	}
 
 	$uri = @$_GET['redirect_uri'];
-	if (!preg_match($service['url'], $uri)) {
+	if ($uri !== $service['redirect_uri']) {
 		http_response_code(403);
 		die('Bad redirect_uri.');
 	}
 
 	if (@$_GET['response_type'] != 'code') {
 		// RFC6749, 4.1.2.1. Error Response
+		// We've verified that the redirect URI is valid, so we can use it now.
 		redirect_back($uri, array(
 			'error' => 'unsupported_response_type',
 			'error_description' => 'i only support response_type=code',
@@ -88,7 +89,7 @@ if ($endpoint === '/authorize') {
 	if (!$serviceName) {
 		json_error(400, 'invalid_client', 'client_id not recognized');
 	}
-	if (!hash_equals($service['secret'], $client_secret)) {
+	if (!hash_equals($service['client_secret'], $client_secret)) {
 		json_error(400, 'invalid_client', 'bad client_secret');
 	}
 
@@ -96,11 +97,11 @@ if ($endpoint === '/authorize') {
 	if ($grant_type === 'authorization_code') {
 		// RFC6749, 4.1.3. Access Token Request
 
-		// the RFC says i MUST check the redirect_uri
-		// i am instead going to be stupid and ignore that
-		// TODO or just enforce a single redirect_uri. honestly it's simpler
+		// The RFC says I MUST check the redirect_uri.
+		// I don't need to do that, as there's only one valid redirect_uri per
+		// service anyways.  If you want to change that, you'd need to add a
+		// redirect_uri field to the tokens table.
 
-		// TODO a separate error for the token expiring would be nice
 		$tokAuth = Token::accept(@$_POST['code'], TokenType::OAuthorization);
 		if (!$tokAuth || $tokAuth->service !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
