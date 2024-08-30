@@ -61,7 +61,12 @@ if ($endpoint === '/authorize') {
 		redirect_error($uri, 'unsupported_response_type', 'i only support response_type=code');
 	}
 
-	$tok = new Token(TokenType::OAuthorization, $serviceName, time(), $sessToken->user);
+	$tok = new Token(
+		TokenType::OAuthorization,
+		$serviceName,
+		time() + $conf['expires'][TokenType::OAuthorization->value],
+		$sessToken->session
+	);
 	redirect_back($uri, array(
 		'code' => $tok->export(),
 	));
@@ -104,11 +109,16 @@ if ($endpoint === '/authorize') {
 	 *
 	 * I'm not doing that. This is not very good software. */
 
-	$tokAcc = new Token(TokenType::OAccess, $tokAuth->service, time(), $tokAuth->user);
+	$tokAcc = new Token(
+		TokenType::OAccess,
+		$tokAuth->service,
+		time() + $conf['expires'][TokenType::OAccess->value],
+		$tokAuth->session
+	);
 	echo json_encode(array(
 		'access_token' => $tokAcc->export(),
 		'token_type' => 'Bearer',
-		'expires_in' => $tokAcc->maxlifetime(),
+		'expires_in' => $conf['expires'][TokenType::OAccess->value],
 		// TODO refresh tokens
 		// 'refresh_token' => $tokmgrcreate(TokenType:ORefresh, $tokService, $tokUser),
 	));
@@ -126,11 +136,11 @@ if ($endpoint === '/authorize') {
 		header('WWW-Authenticate: Bearer error="invalid_token"');
 		die();
 	}
-	$data   = UserDB::getInstance()->getUser($tok->user);
-	$groups = UserDB::getInstance()->getGroups($data['id']);
+	$data   = Database::getInstance()->getUser($tok->getUserID());
+	$groups = Database::getInstance()->getGroups($data['id']);
 	echo json_encode(array(
 		'user_id'    => $data['legacy_id'],
-		'login'      => $tok->user,
+		'login'      => $data['username'],
 
 		'full_name'  => $data['fullname'],
 		'first_name' => $data['first_name'],

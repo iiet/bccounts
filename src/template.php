@@ -15,8 +15,9 @@
 <?php
 $sessToken = MySession::getToken();
 if ($sessToken) {
+	$userinfo = Database::getInstance()->getUser($sessToken->getUserID());
 ?>
-		<span class="mx-2">Zalogowano jako <?= htmlspecialchars($sessToken->user) ?></span>
+		<span class="mx-2">Zalogowano jako <?= htmlspecialchars($userinfo['username']) ?></span>
 		<a href="/logout.php" class="btn btn-outline-primary">Wyloguj się</a>
 <?php } ?>
 	</header>
@@ -24,7 +25,9 @@ if ($sessToken) {
 
 function html_footer() { ?>
 	<footer class="py-3 mt-4 border-top mt-auto w-100 text-body-secondary">
-		<a href="#">bccounts</a>
+		bccounts, stworzone przez BIT.
+		<a href="#">kod</a>,
+		<a href="#">polityka prywatności</a>
 	</footer>
 </div>
 </body>

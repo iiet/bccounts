@@ -58,14 +58,23 @@ CREATE INDEX IF NOT EXISTS "usergroups_index_user"
 ON "usergroups" ("user");
 
 CREATE TABLE IF NOT EXISTS "sessions" (
-	"id" INTEGER NOT NULL UNIQUE,
+	-- Two notes:
+	-- 1. Without AUTOINCREMENT, session IDs could be reused, which could cause
+	--    issues if e.g. a token assigned to a session doesn't get DELETEd
+	--    and then gets reused for another session.
+	--    https://www.sqlite.org/autoinc.html
+	--    AUTOINCREMENT guarantees IDs won't get reused, but I still tried to
+	--    write code that will be robust if IDs do get reused.
+	-- 2. The IDs are visible to users in the session list, so they can
+	--    figure out how active the service is. I don't see this as an issue,
+	--    however it should be relatively easy to switch to randomly generated
+	--    IDs instead.
+	"id" INTEGER NOT NULL UNIQUE AUTOINCREMENT,
 	"user" INTEGER NOT NULL,
 
 	"ctime" INTEGER NOT NULL,
-	-- The IP the session was created on.
+	-- The IP that created the session.
 	"ip" TEXT,
-	-- The user agent used to create the session.
-	"useragent" TEXT,
 	PRIMARY KEY("id"),
 	FOREIGN KEY ("user") REFERENCES "users"("id")
 	ON UPDATE RESTRICT ON DELETE RESTRICT

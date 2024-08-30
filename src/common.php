@@ -13,79 +13,76 @@ enum TokenType: string
 
 /**
  * Represents an authenticated, valid "token" verifying permission to do
- * something as the user. Used for OAuth2 tokens, and for the session tokens (TODO). */
+ * something as the user. Used for OAuth2 tokens and session tokens. */
 class Token
 {
 	public TokenType $type;
 	public string    $service;
-	public int       $time; /* creation time */
-	public string    $user;
+	public int       $expires;
+	public int       $session;
+	private ?int     $user = null;
 
-	public function __construct(
-		TokenType $type, string $service, int $time,
-		string $user
-	) {
-		$this->type       = $type;
-		$this->service    = $service;
-		$this->time       = $time;
-		$this->user       = $user;
+	protected ?string $repr = null;
+
+	// TODO make this constructor private, and make another public one
+	//      that automatically chooses the correct expiry time
+	public function __construct(TokenType $type, string $service, int $expires, int $session) {
+		$this->type    = $type;
+		$this->service = $service;
+		$this->expires = $expires;
+		$this->session = $session;
 	}
 
-	protected function has_illegal_chars() {
-		return str_contains($this->type->value, ':')
-			|| str_contains($this->service, ':')
-			|| str_contains($this->user, ':');
-	}
-
-	/**
-	 * Serializes and signs the token.
-	 */
 	public function export(): string {
 		global $conf;
-		if ($this->has_illegal_chars()) {
-			// TODO exceptions?
-			die('Tried to create a bad token, something is fucked.');
+		if ($this->repr !== null) {
+			return $this->repr;
 		}
-		$tok = $this->type->value . ':'
-		     . $this->service . ':'
-		     . $this->time . ':'
-		     . $this->user;
-		$mac = hash_hmac('sha256', $tok, $conf['token_secret']);
-		return $mac . ':' . $tok;
+		// Generate 32*8=256 bits of entropy and encode it with base64url.
+		// random_bytes is safe for crypto uses.
+		$repr = str_replace(['+', '/', '='], ['-', '_', ''],  base64_encode(random_bytes(32)));
+		// Prepend it with the time because I feel like it.
+		$repr = time() . '_' . $repr;
+		Database::getInstance()->runStmt('
+			INSERT INTO tokens (token, session, type, expires, service)
+			VALUES (?, ?, ?, ?, ?)
+		', [$repr, $this->session, $this->type->value, $this->expires, $this->service]);
+		return $repr;
+	}
+
+	public function getUserID(): int {
+		$stmt = Database::getInstance()->runStmt('
+			SELECT user
+			FROM sessions
+			WHERE id = ?
+		', [$this->session]);
+		$res = $stmt->fetch();
+		return $res['user'];
 	}
 
 	/**
-	 * Validates an exported token and checks if it's the expected type.
-	 * If it is - returns the parsed token.
+	 * Fetches a token from the database, and verifies that it's a valid
+	 * token of the expected type.
 	 */
-	public static function accept(string $fulltok, TokenType $type): ?Token {
+	public static function accept(string $repr, TokenType $type): ?Token {
 		global $conf;
-		[$usermac, $tok] = explode(':', $fulltok, 2);
-		$mac = hash_hmac('sha256', $tok, $conf['token_secret']);
-		if (!hash_equals($mac, $usermac)) {
-			return null;
-		}
 
-		[$usertype, $service, $time, $user] = explode(':', $tok, 4);
-		$obj = new Token(TokenType::from($usertype), $service, $time, $user);
+		$stmt = Database::getInstance()->runStmt('
+			SELECT session, expires, service
+			FROM tokens
+			WHERE token = ? AND type = ?
+		', [$repr, $type->value]);
+		$res = $stmt->fetch();
+		if ($res === false) return null;
+		[$session, $expires, $service] = $res;
 
-		// Let's validate it.
-		if ($obj->has_illegal_chars()) {
-			die('Successfully validated an illegal token?');
-		}
-		if ($obj->type !== $type) {
-			return null;
-		}
-		if ($obj->time + $obj->maxlifetime() < time()) {
-			return null;
-		}
+		$obj = new Token($type, $service, $expires, $session);
+
+		// TODO! check session expiry time too
+		// TODO cronjob to clear expired tokens and sessions
+		if ($obj->expires < time()) return null;
 
 		return $obj;
-	}
-
-	public function maxlifetime(): int {
-		global $conf;
-		return $conf['expires'][$this->type->value];
 	}
 }
 
@@ -94,12 +91,77 @@ abstract class MySession
 	private static ?Token $token = null;
 	private static bool $tokenCached = false;
 
-	public static function setToken(Token $tok): void {
+	public static function login(string $user, #[\SensitiveParameter] string $pass): bool {
 		global $conf;
-		assert($tok->type === TokenType::Session);
-		assert($tok->service === '');
-		setcookie($conf['cookie'], $tok->export(), array(
-			'expires' => $tok->time + $tok->maxlifetime(),
+
+		// TODO log "weird" errors
+		$stmt = Database::getInstance()->runStmt('
+			SELECT id, password
+			FROM USERS
+			WHERE username = ? OR email = ?
+		', [$user, $user]);
+		if (!$stmt) return false;
+		// I'm assuming we never get multiple results - usernames can't contain @.
+		$res = $stmt->fetch();
+		if (!$res) return false;
+		[$id, $hash] = $res;
+		if (!password_verify($pass, $hash)) return false;
+
+		// Alright, the password is correct. Let's create a new session.
+		// RETURNING is an SQLite extension (that I think came from PostgreSQL?)
+		// It's much saner than lastInsertId, IMO.
+		$stmt = Database::getInstance()->runStmt('
+			INSERT INTO sessions (user, ctime, ip)
+			VALUES (?, ?, ?)
+			RETURNING id
+		', [$id, time(), $_SERVER['REMOTE_ADDR']]);
+		if (!$stmt) return false;
+		$res = $stmt->fetch();
+		if ($res == false) return false;
+
+		// Create and save the token.
+		$tok = new Token(
+			TokenType::Session,
+			'',
+			time() + $conf['expires'][TokenType::Session->value],
+			$res[0]
+		);
+		self::setToken($tok);
+		return true;
+	}
+
+	public static function logout(int $session): void {
+		$token = self::getToken();
+		if ($token && $token->session == $session) {
+			self::setToken(null);
+		}
+
+		// If after deleting the session some tokens remain in the database,
+		// the session ID they point to might be reused, which gives the
+		// token holder access to another account!
+
+		// The foreign key relation on tokens *should* automatically delete
+		// all the tokens linked to the session, and AUTOINCREMENT on sessions
+		// should prevent ID reuse, but, just to be sure, let's delete the
+		// tokens anyways.
+		$stmt = Database::getInstance()->runStmt('
+			DELETE FROM tokens
+			WHERE session = ?
+		', [$session]);
+		if (!$stmt) die(); // Not taking any chances.
+
+		$stmt = Database::getInstance()->runStmt('
+			DELETE FROM sessions
+			WHERE id = ?
+		', [$session]);
+		if (!$stmt) die();
+	}
+
+	private static function setToken(?Token $tok): void {
+		global $conf;
+		// To unset the cookie, we set its expiry time in the past.
+		setcookie($conf['cookie'], $tok ? $tok->export() : '', array(
+			'expires' => $tok ? $tok->expires : 1,
 			'httponly' => true,
 			'path' => '/',
 			'secure' => true,
@@ -108,18 +170,10 @@ abstract class MySession
 		self::$tokenCached = true;
 	}
 
-	public static function unsetToken(): void {
-		global $conf;
-		setcookie($conf['cookie'], '', array(
-			'expires' => 1,
-			'httponly' => true,
-			'path' => '/',
-			'secure' => true,
-		));
-		self::$token = null;
-		self::$tokenCached = true;
-	}
-
+	/**
+	 * Returns the session token of the currently logged in user or null
+	 * if no session is active.
+	 */
 	public static function getToken(): ?Token {
 		global $conf;
 		if (!self::$tokenCached) {
@@ -132,16 +186,80 @@ abstract class MySession
 		return self::$token;
 	}
 
-	// Not directly related to managing sessions, but useful enough.
+	/**
+	 * If the user isn't logged in, redirect them to the login page and
+	 * kill the script.
+	 */
 	public static function requireLogin(): void {
 		if (self::getToken() !== null) return;
-		echo '<pre>';
 		$uri = '/login.php?redir=' . urlencode($_SERVER['REQUEST_URI']);
 		header('Location: ' . $uri);
 		die();
 	}
 }
 
+class Database
+{
+	protected static $instance = null;
+	protected PDO $dbh;
+	protected ?PDOStatement $lookup_stmt = null;
+	protected ?PDOStatement $group_stmt = null;
+
+	protected function __construct() {
+		global $conf;
+		$this->dbh = new PDO($conf['pdo_dsn'], $conf['pdo_user'], $conf['pdo_pass']);
+		// SQLite doesn't enforce foreign key relations by default.
+		$this->dbh->exec('PRAGMA foreign_keys = ON;');
+
+	}
+
+	public static function getInstance() {
+		if (self::$instance === null) {
+			self::$instance = new Database();
+		}
+		return self::$instance;
+	}
+
+	public function getUser(int $uid): ?array {
+		$stmt = $this->runStmt('
+			SELECT
+			id, email, username, fullname, start_year, transcript_id, legacy_id
+			FROM users WHERE id = ?
+		', [$uid]);
+		$res = $stmt->fetch(PDO::FETCH_ASSOC);
+		if ($res === false) return null;
+
+		// Backwards compat stuff.
+		if ($res['legacy_id'] === null) {
+			$res['legacy_id'] = 'new_' . $res['id'];
+		}
+		// Yeah, this is stupid, but so is having a separate first name
+		// and last name field in the first place.
+		[$res['first_name'], $res['last_name']] = explode(' ', $res['fullname']);
+		return $res;
+	}
+
+	public function getGroups(int $id): ?array {
+		$stmt = $this->runStmt('
+			SELECT "group"
+			FROM usergroups WHERE user = ?
+		', [$id]);
+		$groups = [];
+		while (($res = $stmt->fetch(PDO::FETCH_NUM))) {
+			$groups[] = $res[0];
+		}
+		return $groups;
+	}
+
+	public function runStmt(string $tmpl, array $param): ?PDOStatement {
+		$stmt = $this->dbh->prepare($tmpl);
+		if ($stmt && $stmt->execute($param)) {
+			return $stmt;
+		} else {
+			return null;
+		}
+	}
+}
+
 $conf = require(__DIR__ . '/../config.php');
 require(__DIR__ . '/template.php');
-require(__DIR__ . '/userdb.php');
