@@ -56,4 +56,6 @@ return array(
 		'Another example' => 'https://example.com',
 		'OAuthDebugger' => 'https://oauthdebugger.com',
 	),
+
+	'sourcelink' => 'https://git.iiet.pl/iiet/bccounts',
 );

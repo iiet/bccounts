@@ -27,11 +27,13 @@ if ($sessToken) {
 	</header>
 <?php } // html_header end
 
-function html_footer() { ?>
+function html_footer() {
+	global $conf;
+	?>
 	<footer class="py-3 mt-4 border-top mt-auto w-100 text-body-secondary">
 		bccounts, stworzone przez BIT.
-		<a href="#">kod</a>,
-		<a href="#">polityka prywatności</a>
+		<a href="<?= htmlspecialchars($conf['sourcelink']) ?>">kod</a>,
+		<a href="/privacy.php">polityka prywatności</a>
 	</footer>
 </div>
 </body>

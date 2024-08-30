@@ -32,7 +32,7 @@ html_header('iiet.pl');
 	<input type="password" name="pass" class="form-control mb-3" required/>
 	<div class="d-flex flex-wrap justify-content-between align-items-center">
 		<button class="btn btn-primary">Zaloguj się</button>
-		<a id="forgotpass" href="#">Zapomniałeś hasła?</a>
+		<a id="forgotpass" href="/recover.php">Zapomniałeś hasła?</a>
 	</div>
 </form>
 <?php html_footer();
