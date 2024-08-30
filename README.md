@@ -29,21 +29,11 @@ bo nie chcę oczekiwać od kolejnych adminów znajomości frameworka PHP
 który akurat był popularny kiedy zaczynałem to pisać.
 Jest to celowo "prymitywny" kod.
 
-[^telemetry]:
-...i z trzech zamkniętych narzędzi do telemetrii - Google Analytics, Airbrake, Newrelic.
-w apce do sso. lol.
+[^telemetry]: ...i z trzech zamkniętych narzędzi do telemetrii - Google Analytics, Airbrake, Newrelic.  w apce do sso. lol.
 
-[^outdated]:
-Można po prostu nic nie aktualizować, co było główną taktyką BITu przez ostatnie parę lat.
-Może to i działać dla małych projektów (stąd bccounts),
-ale przy korzystaniu z tylu bibliotek na pewno przynajmniej w paru z nich czychają się jakieś niezałatane błędy.
+[^outdated]: Można po prostu nic nie aktualizować, co było główną taktyką BITu przez ostatnie parę lat.  Może to i działać dla małych projektów (stąd bccounts), ale przy korzystaniu z tylu bibliotek na pewno przynajmniej w paru z nich czychają się jakieś niezałatane błędy.
 
-[^bootstrap]:
-Poza CSS Bootstrapa.
-Jest to jeden plik którego nie muszę nigdy aktualizować,
-a nawet gdyby przestał jakimś cudem działać,
-to zepsuje tylko estetykę strony - a nie jej działanie.
-Jego zalety przewyższają wady.
+[^bootstrap]: Poza CSS Bootstrapa.  Jest to jeden plik którego nie muszę nigdy aktualizować, a nawet gdyby przestał jakimś cudem działać, to zepsuje tylko estetykę strony - a nie jej działanie.  Jego zalety przewyższają wady.
 
 ## jak odpalić
 1. Tworzymy bazę danych - `sqlite db.sqlite '.read schema.sql'`.
