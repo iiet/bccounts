@@ -81,9 +81,18 @@ if ($endpoint === '/authorize') {
 	header('Content-Type: application/json;charset=UTF-8');
 
 	// RFC6749, 2.3. Client Authentication
-	// TODO support Basic auth
-	$client_id = @$_POST['client_id'];
-	$client_secret = @$_POST['client_secret'];
+	if (isset($_SERVER['PHP_AUTH_USER']) && isset($_SERVER['PHP_AUTH_PW'])) {
+		// HTTP Basic authentication
+		$client_id     = $_SERVER['PHP_AUTH_USER'];
+		$client_secret = $_SERVER['PHP_AUTH_PW'];
+	} else if (isset($_POST['client_id']) && isset($_POST['client_secret'])) {
+		// "Inline" credentials.
+		// Used by OAuthDebugger
+		$client_id     = $_POST['client_id'];
+		$client_secret = $_POST['client_secret'];
+	} else {
+		json_error(400, 'invalid_client', 'no authorization method used');
+	}
 
 	[$serviceName, $service] = find_service($client_id);
 	if (!$serviceName) {
