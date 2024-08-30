@@ -24,9 +24,13 @@ class Token
 
 	protected ?string $repr = null;
 
-	// TODO make this constructor private, and make another public one
-	//      that automatically chooses the correct expiry time
-	public function __construct(TokenType $type, string $service, int $expires, int $session) {
+	public function __construct(TokenType $type, string $service, ?int $expires, int $session) {
+		global $conf;
+		// If $expires is null, choose it based on the token type.
+		if ($expires === null) {
+			$expires = time() + $conf['expires'][$type->value];
+		}
+
 		$this->type    = $type;
 		$this->service = $service;
 		$this->expires = $expires;

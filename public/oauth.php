@@ -18,21 +18,16 @@ function redirect_back(string $uri, array $param) {
 	die();
 }
 
-// RFC6749, 4.1.2.1.
-function redirect_error(string $uri, string $error, string $desc) {
-	redirect_back($uri, array(
-		'error' => $error,
-		'error_description' => $desc,
-	));
-}
-
+/**
+ * Returns a JSON-formatted error from the token endpoint,
+ * as specified by RFC 6749, 5.2. Error Response
+ */
 function json_error(int $code, string $error, ?string $desc) {
-	// 5.2.
 	// I'm assuming Content-Type was already set
 	http_response_code(400);
 	$param = array('error' => $error);
 	if ($desc) $param['error_description'] = $desc;
-	echo json_encode($param);
+	echo json_encode($param) . "\n";
 	die();
 }
 
@@ -46,6 +41,8 @@ function find_service(string $client_id) {
 	return false;
 }
 
+// RFC 6749, 5.1. Successful Response
+// To keep stuff simple I'm just setting those headers up front.
 header('Cache-Control: no-store');
 header('Pragma: no-cache');
 
@@ -68,15 +65,14 @@ if ($endpoint === '/authorize') {
 	}
 
 	if (@$_GET['response_type'] != 'code') {
-		redirect_error($uri, 'unsupported_response_type', 'i only support response_type=code');
+		// RFC6749, 4.1.2.1. Error Response
+		redirect_back($uri, array(
+			'error' => 'unsupported_response_type',
+			'error_description' => 'i only support response_type=code',
+		));
 	}
 
-	$tok = new Token(
-		TokenType::OAuthorization,
-		$serviceName,
-		time() + $conf['expires'][TokenType::OAuthorization->value],
-		$sessToken->session
-	);
+	$tok = new Token(TokenType::OAuthorization, $serviceName, null, $sessToken->session);
 	redirect_back($uri, array(
 		'code' => $tok->export(),
 	));
@@ -117,25 +113,15 @@ if ($endpoint === '/authorize') {
 		 * redirection URI. */
 		// TODO expire authorization codes, preferably with a flag in ::accept
 
-		$tokAcc = new Token(
-			TokenType::OAccess,
-			$tokAuth->service,
-			time() + $conf['expires'][TokenType::OAccess->value],
-			$tokAuth->session
-		);
-		$tokRefresh = new Token(
-			TokenType::ORefresh,
-			$tokAuth->service,
-			time() + $conf['expires'][TokenType::ORefresh->value],
-			$tokAuth->session
-		);
+		$tokAcc = new Token(TokenType::OAccess, $tokAuth->service, null, $tokAuth->session);
+		$tokRefresh = new Token(TokenType::ORefresh, $tokAuth->service, null, $tokAuth->session);
 
 		echo json_encode(array(
 			'access_token' => $tokAcc->export(),
 			'refresh_token' => $tokRefresh->export(),
 			'token_type' => 'Bearer',
 			'expires_in' => $conf['expires'][TokenType::OAccess->value],
-		));
+		)) . "\n";
 	} else if ($grant_type == 'refresh_token') {
 		// TODO checks if current accounts check the client secret on refresh
 		$tokRefresh = Token::accept(@$_POST['refresh_token'], TokenType::ORefresh);
@@ -143,17 +129,12 @@ if ($endpoint === '/authorize') {
 			json_error(400, 'invalid_grant', null);
 		}
 
-		$tokAcc = new Token(
-			TokenType::OAccess,
-			$tokRefresh->service,
-			time() + $conf['expires'][TokenType::OAccess->value],
-			$tokRefresh->session
-		);
+		$tokAcc = new Token(TokenType::OAccess, $tokRefresh->service, null, $tokRefresh->session);
 		echo json_encode(array(
 			'access_token' => $tokAcc->export(),
 			'token_type' => 'Bearer',
 			'expires_in' => $conf['expires'][TokenType::OAccess->value],
-		));
+		)) . "\n";
 	} else {
 		$err = 'the only supported grant_types are authorization_code and refresh_token';
 		json_error(400, 'unsupported_grant_type', $err);
@@ -184,7 +165,7 @@ if ($endpoint === '/authorize') {
 		'email'      => $data['email'],
 		'start_year' => $data['start_year'],
 		'groups'     => $groups,
-	));
+	)) . "\n";
 } else {
 	http_response_code(404);
 	echo 'Bad oauth endpoint.';
