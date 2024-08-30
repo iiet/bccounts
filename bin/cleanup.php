@@ -7,13 +7,12 @@ require(__DIR__ . '/../src/common.php');
 
 Database::getInstance()->runStmt('
 	DELETE FROM tokens
-	WHERE expires < ?
+	WHERE expires IS NOT NULL AND expires < ?
 ', [time()]);
 
-// Sessions don't have an explicit "expires" field (maybe they should?),
-// so I'm subtracting the lifetime of the Session token, as it doesn't make
-// sense for sessions to last longer than that anyways.
+// I'm relying on the foreign key relation to automatically delete tokens
+// linked to the expired sessions.
 Database::getInstance()->runStmt('
 	DELETE FROM sessions
-	WHERE ctime < ?
-', [time() - $conf['expires'][TokenType::Session->value]]);
+	WHERE expires < ?
+', [time()]);

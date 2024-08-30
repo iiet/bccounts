@@ -64,6 +64,7 @@ CREATE TABLE IF NOT EXISTS "sessions" (
 	--    https://www.sqlite.org/autoinc.html
 	--    AUTOINCREMENT guarantees IDs won't get reused, but I still tried to
 	--    write code that will be robust if IDs do get reused.
+	--    (with the exception of bin/cleanup.php)
 	-- 2. The IDs are visible to users in the session list, so they can
 	--    figure out how active the service is. I don't see this as an issue,
 	--    however it should be relatively easy to switch to randomly generated
@@ -72,6 +73,8 @@ CREATE TABLE IF NOT EXISTS "sessions" (
 	"user" INTEGER NOT NULL,
 
 	"ctime" INTEGER NOT NULL,
+	"expires" INTEGER NOT NULL,
+
 	-- The IP that created the session.
 	"ip" TEXT,
 	FOREIGN KEY ("user") REFERENCES "users"("id")

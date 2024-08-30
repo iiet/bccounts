@@ -68,20 +68,20 @@ class Token
 		global $conf;
 
 		$stmt = Database::getInstance()->runStmt('
-			SELECT session, expires, service
+			SELECT tokens.session, tokens.expires, sessions.expires, tokens.service
 			FROM tokens
+			JOIN sessions ON tokens.session = sessions.id
 			WHERE token = ? AND type = ?
 		', [$repr, $type->value]);
 		$res = $stmt->fetch();
 		if ($res === false) return null;
-		[$session, $expires, $service] = $res;
+		[$session, $tokExpires, $sessExpires, $service] = $res;
 
-		$obj = new Token($type, $service, $expires, $session);
-
-		// TODO! check session expiry time too
-		if ($obj->expires < time()) return null;
-
-		return $obj;
+		$time = time();
+		if ($tokExpires < $time || $sessExpires < $time) {
+			return null;
+		}
+		return new Token($type, $service, $tokExpires, $session);
 	}
 }
 
@@ -109,22 +109,19 @@ abstract class MySession
 		// Alright, the password is correct. Let's create a new session.
 		// RETURNING is an SQLite extension (that I think came from PostgreSQL?)
 		// It's much saner than lastInsertId, IMO.
+		$time = time();
+		$expires = $time + $conf['expires'][TokenType::Session->value];
 		$stmt = Database::getInstance()->runStmt('
-			INSERT INTO sessions (user, ctime, ip)
-			VALUES (?, ?, ?)
+			INSERT INTO sessions (user, ctime, expires, ip)
+			VALUES (?, ?, ?, ?)
 			RETURNING id
-		', [$id, time(), $_SERVER['REMOTE_ADDR']]);
+		', [ $id, $time, $expires, $_SERVER['REMOTE_ADDR'] ]);
 		if (!$stmt) return false;
 		$res = $stmt->fetch();
 		if ($res == false) return false;
 
 		// Create and save the token.
-		$tok = new Token(
-			TokenType::Session,
-			'',
-			time() + $conf['expires'][TokenType::Session->value],
-			$res[0]
-		);
+		$tok = new Token(TokenType::Session, '', $expires, $res[0]);
 		self::setToken($tok);
 		return true;
 	}
