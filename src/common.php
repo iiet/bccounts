@@ -100,7 +100,7 @@ abstract class MySession
 		// TODO log "weird" errors
 		$stmt = Database::getInstance()->runStmt('
 			SELECT id, password
-			FROM USERS
+			FROM users
 			WHERE username = ? OR email = ?
 		', [$user, $user]);
 		if (!$stmt) return false;
@@ -223,7 +223,7 @@ class Database
 	public function getUser(int $uid): ?array {
 		$stmt = $this->runStmt('
 			SELECT
-			id, email, username, fullname, start_year, transcript_id, legacy_id
+			id, email, username, password, fullname, start_year, transcript_id, legacy_id
 			FROM users WHERE id = ?
 		', [$uid]);
 		$res = $stmt->fetch(PDO::FETCH_ASSOC);

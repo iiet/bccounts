@@ -8,6 +8,12 @@ return array(
 	'pdo_user' => null,
 	'pdo_pass' => null,
 
+	'passminlen' => 12,
+	/* The second and third arguments to password_hash.
+	 * You should tune this for your server - see bin/bcryptbench.php
+	 */
+	'passhash' => [PASSWORD_BCRYPT, ['cost' => 12]],
+
 	'services' => array(
 		// The key is used to identify the service internally and it might be
 		// visible to the user.

@@ -24,16 +24,15 @@ html_header('iiet.pl');
 	<table class="table">
 <?php
 $data = array(
-	'first_name' => 'Imię',
-	'last_name' => 'Nazwisko',
-	'email' => 'Email',
-	'start_year' => 'Rocznik',
-	'transcript_id' => 'Indeks',
+	'fullname' => '',
+	'email' => 'Email:',
+	'start_year' => 'Rocznik:',
+	'transcript_id' => 'Indeks:',
 );
 foreach ($data as $k => $name) {
 ?>
 		<tr>
-			<th class="text-end"><?= htmlspecialchars($name) ?>:</th>
+			<th class="text-end"><?= htmlspecialchars($name) ?></th>
 			<td><?= htmlspecialchars($userinfo[$k]) ?></td>
 		</tr>
 <?php } ?>
@@ -47,7 +46,7 @@ foreach ($data as $k => $name) {
 		</tr>
 	</table>
 	<div class="card-body pt-0">
-		<a class="btn btn-outline-primary float-end" href="#">Zmień hasło</a>
+		<a class="btn btn-outline-primary float-end" href="/chpass.php">Zmień hasło</a>
 	</div>
 </div>
 <div class="card w-100 my-4">
