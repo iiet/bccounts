@@ -1,4 +1,5 @@
 <?php
+/* Copy me to config.php and modify to taste. */
 
 return array(
 	/* The name of the cookie used to store the session token. */
