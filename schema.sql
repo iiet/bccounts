@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS "users" (
-	"id" INTEGER NOT NULL UNIQUE,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 
 	-- Set during onboarding.
 	-- If NULL, the user wasn't yet onboarded - deny login!
@@ -36,8 +36,7 @@ CREATE TABLE IF NOT EXISTS "users" (
 	-- The previous implementation assigned an unique random 20 character
 	-- string to each user. I'm keeping this in for now for compatibility,
 	-- but I'd love to get rid of this field in the future.
-	"legacy_id" TEXT UNIQUE,
-	PRIMARY KEY("id")
+	"legacy_id" TEXT UNIQUE
 );
 
 CREATE INDEX IF NOT EXISTS "users_index_username"
@@ -69,16 +68,17 @@ CREATE TABLE IF NOT EXISTS "sessions" (
 	--    figure out how active the service is. I don't see this as an issue,
 	--    however it should be relatively easy to switch to randomly generated
 	--    IDs instead.
-	"id" INTEGER NOT NULL UNIQUE AUTOINCREMENT,
+	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 	"user" INTEGER NOT NULL,
 
 	"ctime" INTEGER NOT NULL,
 	-- The IP that created the session.
 	"ip" TEXT,
-	PRIMARY KEY("id"),
 	FOREIGN KEY ("user") REFERENCES "users"("id")
 	ON UPDATE RESTRICT ON DELETE RESTRICT
 );
+CREATE INDEX IF NOT EXISTS "sessions_user"
+ON "sessions"("user");
 
 /* Stores OAuth tokens and a session token (stored in a cookie).
  * If you're going to add support for apps not managed by us, add a scopes
@@ -94,3 +94,5 @@ CREATE TABLE IF NOT EXISTS "tokens" (
 	FOREIGN KEY ("session") REFERENCES "sessions"("id")
 	ON UPDATE RESTRICT ON DELETE CASCADE
 );
+CREATE INDEX IF NOT EXISTS "tokens_session"
+ON "tokens"("session");
