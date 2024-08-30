@@ -79,7 +79,6 @@ class Token
 		$obj = new Token($type, $service, $expires, $session);
 
 		// TODO! check session expiry time too
-		// TODO cronjob to clear expired tokens and sessions
 		if ($obj->expires < time()) return null;
 
 		return $obj;
