@@ -11,7 +11,9 @@
 <body>
 <div class="container min-vh-100 d-flex flex-column align-items-center">
 	<header class="d-flex flex-wrap justify-content-between py-3 mb-4 border-bottom align-items-center w-100">
-		<a href="/" class="link-body-emphasis text-decoration-none fs-4 flex-grow-1">iiet.pl</a>
+		<div class="flex-grow-1">
+			<a href="/" class="link-body-emphasis text-decoration-none fs-4">iiet.pl</a>
+		</div>
 <?php
 $sessToken = MySession::getToken();
 if ($sessToken) {
@@ -19,9 +21,11 @@ if ($sessToken) {
 ?>
 		<span class="mx-2">Zalogowano jako <?= htmlspecialchars($userinfo['username']) ?></span>
 		<a href="/logout.php" class="btn btn-outline-primary">Wyloguj się</a>
+<?php } else { ?>
+		<a href="/login.php" class="btn btn-primary">Zaloguj się</a>
 <?php } ?>
 	</header>
-<?php }
+<?php } // html_header end
 
 function html_footer() { ?>
 	<footer class="py-3 mt-4 border-top mt-auto w-100 text-body-secondary">

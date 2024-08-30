@@ -49,4 +49,11 @@ return array(
 		 * session. */
 		TokenType::ORefresh->value       => 6 * 30 * 24 * 60 * 60,
 	),
+
+	// The services listed on the front page.
+	'frontservices' => array(
+		'Example' => 'https://example.com',
+		'Another example' => 'https://example.com',
+		'OAuthDebugger' => 'https://oauthdebugger.com',
+	),
 );

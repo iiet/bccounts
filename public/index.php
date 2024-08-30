@@ -12,11 +12,9 @@ html_header('iiet.pl');
 <div class="card w-100 my-4">
 	<div class="card-header">Nasze serwisy:</div>
 	<ul class="list-group list-group-flush">
-		<li class="list-group-item"><a href="https://enroll-me.iiet.pl/">Enroll Me!</a></li>
-		<li class="list-group-item"><a href="https://wiki.iiet.pl/">EgzamWiki</a></li>
-		<li class="list-group-item"><a href="https://forum.iiet.pl/">Forum</a></li>
-		<li class="list-group-item"><a href="https://git.iiet.pl/">Gitlab</a></li>
-		<li class="list-group-item"><a href="https://chat.iiet.pl/">RocketChat</a></li>
+<?php foreach ($conf['frontservices'] as $k => $v) { ?>
+		<li class="list-group-item"><a href="<?=htmlspecialchars($v)?>"><?=htmlspecialchars($k)?></a></li>
+<?php } ?>
 	</ul>
 </div>
 <div class="card w-100 my-4">
