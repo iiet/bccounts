@@ -1,9 +1,19 @@
 <?php
+/* A mostly self contained implementation of an OAuth2 server.
+ * https://oauth.net/specs/
+ * RFC 6749 is the important one. It might look scary, but this is actually
+ * a pretty simple protocol to implement. Give it a read.
+ */
+
 require(__DIR__ . '/../src/common.php');
 
+/**
+ * Redirect the user to the specified redirect URI with the given query
+ * parameters. Only relevant for /authorize.
+ */
 function redirect_back(string $uri, array $param) {
 	$param['state'] = $_GET['state'];
-	$uri = $_GET['redirect_uri'] . '?' . http_build_query($param);
+	$uri = $uri . '?' . http_build_query($param);
 	header('Location: ' . $uri);
 	die();
 }
@@ -73,16 +83,7 @@ if ($endpoint === '/authorize') {
 } else if ($endpoint === '/token') { // RFC6749, 4.4.
 	header('Content-Type: application/json;charset=UTF-8');
 
-	// 4.1.3. authorization_code
-	// the RFC says i MUST check the redirect_uri
-	// i am instead going to be stupid and ignore that
-	// TODO or just enforce a single redirect_uri. honestly it's simpler
-
-	if (@$_POST['grant_type'] !== 'authorization_code') {
-		json_error(400, 'unsupported_grant_type', 'i only support grant_type=authorization_code');
-	}
-
-	// 2.3.
+	// RFC6749, 2.3. Client Authentication
 	// TODO support Basic auth
 	$client_id = @$_POST['client_id'];
 	$client_secret = @$_POST['client_secret'];
@@ -95,33 +96,68 @@ if ($endpoint === '/authorize') {
 		json_error(400, 'invalid_client', 'bad client_secret');
 	}
 
-	// TODO a separate error for the token expiring would be nice
-	$tokAuth = Token::accept(@$_POST['code'], TokenType::OAuthorization);
-	if (!$tokAuth || $tokAuth->service !== $serviceName) {
-		json_error(400, 'invalid_grant', null);
+	$grant_type = @$_POST['grant_type'];
+	if ($grant_type === 'authorization_code') {
+		// RFC6749, 4.1.3. Access Token Request
+
+		// the RFC says i MUST check the redirect_uri
+		// i am instead going to be stupid and ignore that
+		// TODO or just enforce a single redirect_uri. honestly it's simpler
+
+		// TODO a separate error for the token expiring would be nice
+		$tokAuth = Token::accept(@$_POST['code'], TokenType::OAuthorization);
+		if (!$tokAuth || $tokAuth->service !== $serviceName) {
+			json_error(400, 'invalid_grant', null);
+		}
+
+		/* If an authorization code is used more than once, the authorization
+		 * server MUST deny the request and SHOULD revoke (when possible) all
+		 * tokens previously issued based on that authorization code.
+		 * The authorization code is bound to the client identifier and
+		 * redirection URI. */
+		// TODO expire authorization codes, preferably with a flag in ::accept
+
+		$tokAcc = new Token(
+			TokenType::OAccess,
+			$tokAuth->service,
+			time() + $conf['expires'][TokenType::OAccess->value],
+			$tokAuth->session
+		);
+		$tokRefresh = new Token(
+			TokenType::ORefresh,
+			$tokAuth->service,
+			time() + $conf['expires'][TokenType::ORefresh->value],
+			$tokAuth->session
+		);
+
+		echo json_encode(array(
+			'access_token' => $tokAcc->export(),
+			'refresh_token' => $tokRefresh->export(),
+			'token_type' => 'Bearer',
+			'expires_in' => $conf['expires'][TokenType::OAccess->value],
+		));
+	} else if ($grant_type == 'refresh_token') {
+		// TODO checks if current accounts check the client secret on refresh
+		$tokRefresh = Token::accept(@$_POST['refresh_token'], TokenType::ORefresh);
+		if (!$tokRefresh || $tokRefresh->service !== $serviceName) {
+			json_error(400, 'invalid_grant', null);
+		}
+
+		$tokAcc = new Token(
+			TokenType::OAccess,
+			$tokRefresh->service,
+			time() + $conf['expires'][TokenType::OAccess->value],
+			$tokRefresh->session
+		);
+		echo json_encode(array(
+			'access_token' => $tokAcc->export(),
+			'token_type' => 'Bearer',
+			'expires_in' => $conf['expires'][TokenType::OAccess->value],
+		));
+	} else {
+		$err = 'the only supported grant_types are authorization_code and refresh_token';
+		json_error(400, 'unsupported_grant_type', $err);
 	}
-
-	/* If an authorization code is used more than once, the authorization
-	 * server MUST deny the request and SHOULD revoke (when possible) all
-	 * tokens previously issued based on that authorization code.
-	 * The authorization code is bound to the client identifier and
-	 * redirection URI.
-	 *
-	 * I'm not doing that. This is not very good software. */
-
-	$tokAcc = new Token(
-		TokenType::OAccess,
-		$tokAuth->service,
-		time() + $conf['expires'][TokenType::OAccess->value],
-		$tokAuth->session
-	);
-	echo json_encode(array(
-		'access_token' => $tokAcc->export(),
-		'token_type' => 'Bearer',
-		'expires_in' => $conf['expires'][TokenType::OAccess->value],
-		// TODO refresh tokens
-		// 'refresh_token' => $tokmgrcreate(TokenType:ORefresh, $tokService, $tokUser),
-	));
 } else if ($endpoint === '/userinfo') {
 	// Bearer is described in RFC6750
 	[$method, $rawtok] = explode(' ', @$_SERVER['HTTP_AUTHORIZATION'], 2);

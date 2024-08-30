@@ -46,5 +46,8 @@ return array(
 		TokenType::OAccess->value        => 4 * 60 * 60,
 
 		TokenType::Session->value        => 6 * 30 * 24 * 60 * 60,
+		/* There's no reason for the refresh token to last shorter than the
+		 * session. */
+		TokenType::ORefresh->value       => 6 * 30 * 24 * 60 * 60,
 	),
 );
