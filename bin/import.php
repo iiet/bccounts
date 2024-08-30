@@ -17,8 +17,8 @@ $user_stmt = $dbh->prepare('
 	(:username, :email, :password, :fullname, :start_year, :transcript_id, :ctime, :legacy_id)
 ');
 $group_stmt = $dbh->prepare('
-	INSERT OR IGNORE INTO usergroups ("user", "group")
-	VALUES ((SELECT id from USERS where username = ?), ?)
+	INSERT OR IGNORE INTO usergroups ("user", "group", "elder")
+	VALUES ((SELECT id from USERS where username = ?), ?, 0)
 ');
 
 $starttime = time();

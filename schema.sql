@@ -45,9 +45,12 @@ ON "users" ("username");
 CREATE INDEX IF NOT EXISTS "users_index_email"
 ON "users" ("email");
 
+-- TODO cli tool to manage groups (and elders)
 CREATE TABLE IF NOT EXISTS "usergroups" (
 	"user" INTEGER NOT NULL,
 	"group" TEXT NOT NULL,
+	-- If true (=1), the user will be able to see the list of group members.
+	"elder" INTEGER NOT NULL,
 	PRIMARY KEY("user", "group"),
 	FOREIGN KEY ("user") REFERENCES "users"("id")
 	ON UPDATE RESTRICT ON DELETE CASCADE
@@ -55,6 +58,8 @@ CREATE TABLE IF NOT EXISTS "usergroups" (
 
 CREATE INDEX IF NOT EXISTS "usergroups_index_user"
 ON "usergroups" ("user");
+CREATE INDEX IF NOT EXISTS "usergroups_index_group"
+ON "usergroups" ("group");
 
 CREATE TABLE IF NOT EXISTS "sessions" (
 	-- Two notes:
