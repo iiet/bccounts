@@ -32,6 +32,14 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"mtime" INTEGER,
 	-- Time when the user last logged in.
 	"atime" INTEGER,
+	-- Time when we've last sent this user an email.
+	-- Used for rate limiting.
+	"last_email" INTEGER,
+
+	-- The registration token.
+	-- Should probably be stored in a separate table, but this is simpler,
+	-- and makes it easier to atomically initialize the user.
+	"regtoken" TEXT UNIQUE,
 
 	-- The previous implementation assigned an unique random 20 character
 	-- string to each user. I'm keeping this in for now for compatibility,
@@ -41,9 +49,12 @@ CREATE TABLE IF NOT EXISTS "users" (
 
 CREATE INDEX IF NOT EXISTS "users_index_username"
 ON "users" ("username");
-
 CREATE INDEX IF NOT EXISTS "users_index_email"
 ON "users" ("email");
+CREATE INDEX IF NOT EXISTS "users_index_transcript_id"
+ON "users" ("transcript_id");
+CREATE INDEX IF NOT EXISTS "users_index_regtoken"
+ON "users" ("regtoken");
 
 -- TODO cli tool to manage groups (and elders)
 CREATE TABLE IF NOT EXISTS "usergroups" (

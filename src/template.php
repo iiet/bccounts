@@ -34,6 +34,7 @@ function html_footer() {
 		bccounts, stworzone przez BIT.
 		<a href="<?= htmlspecialchars($conf['sourcelink']) ?>">kod</a>,
 		<a href="/privacy.php">polityka prywatności</a>
+		<!-- TODO contact -->
 	</footer>
 </div>
 </body>

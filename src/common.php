@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * Generates a random string that can be used as a secret token.
+ * Used by class Token and by bin/invite.php.
+ */
+function random_token(): string {
+	// Generate 32*8=256 bits of entropy and encode it with base64url.
+	// random_bytes is safe for crypto uses.
+	$repr = str_replace(['+', '/', '='], ['-', '_', ''],  base64_encode(random_bytes(32)));
+	// Prepend it with the time because I feel like it.
+	return time() . '_' . $repr;
+}
+
 enum TokenType: string
 {
 	/* tokens used for OAuth: */
@@ -39,19 +51,14 @@ class Token
 
 	public function export(): string {
 		global $conf;
-		if ($this->repr !== null) {
-			return $this->repr;
+		if ($this->repr === null) {
+			$this->repr = random_token();
+			Database::getInstance()->runStmt('
+				INSERT INTO tokens (token, session, type, expires, service)
+				VALUES (?, ?, ?, ?, ?)
+			', [$this->repr, $this->session, $this->type->value, $this->expires, $this->service]);
 		}
-		// Generate 32*8=256 bits of entropy and encode it with base64url.
-		// random_bytes is safe for crypto uses.
-		$repr = str_replace(['+', '/', '='], ['-', '_', ''],  base64_encode(random_bytes(32)));
-		// Prepend it with the time because I feel like it.
-		$repr = time() . '_' . $repr;
-		Database::getInstance()->runStmt('
-			INSERT INTO tokens (token, session, type, expires, service)
-			VALUES (?, ?, ?, ?, ?)
-		', [$repr, $this->session, $this->type->value, $this->expires, $this->service]);
-		return $repr;
+		return $this->repr;
 	}
 
 	public function getUserID(): int {
@@ -108,6 +115,7 @@ abstract class MySession
 		$res = $stmt->fetch();
 		if (!$res) return false;
 		[$id, $hash] = $res;
+		if ($hash === null) return false;
 		if (!password_verify($pass, $hash)) return false;
 
 		// Alright, the password is correct. Let's create a new session.
@@ -201,7 +209,7 @@ abstract class MySession
 class Database
 {
 	protected static $instance = null;
-	protected PDO $dbh;
+	public PDO $dbh;
 	protected ?PDOStatement $lookup_stmt = null;
 	protected ?PDOStatement $group_stmt = null;
 
@@ -252,6 +260,7 @@ class Database
 	}
 
 	public function runStmt(string $tmpl, array $param): ?PDOStatement {
+		// TODO cache statements?
 		$stmt = $this->dbh->prepare($tmpl);
 		if ($stmt && $stmt->execute($param)) {
 			return $stmt;
@@ -259,6 +268,37 @@ class Database
 			return null;
 		}
 	}
+
+	public function beginTransaction(): bool { return $this->dbh->beginTransaction(); }
+	public function commit(): bool { return $this->dbh->commit(); }
+}
+
+/**
+ * A wrapper around mail() that sends a HTML email with the correct headers.
+ */
+function mymail(string $to, string $subject, string $contents): bool {
+	global $conf;
+	// mail() is a... problematic function.
+	// I should probably use something like PHPMailer instead - it'll probably
+	// stand the test of time - but I'm stubborn about not using any libraries
+	// for this project, so mail() it is.
+	// After all, the documentation doesn't warn me not to use it...
+	if ($conf['email_override'] !== null) {
+		$to = $conf['email_override'];
+	}
+	return mail($to, $subject, $contents, [
+		'From' => $conf['email'],
+		'MIME-Version' => '1.0',
+		'Content-Type' => 'text/html; charset=utf-8',
+	]);
+}
+
+/**
+ * A wrapper around error_log that logs the source file and line information.
+ */
+function mylog(string $to): void {
+	$b = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0];
+	error_log( pathinfo($b['file'])['basename'] . ':' . $b['line'] . ' ' . $to );
 }
 
 $conf = require(__DIR__ . '/../config.php');

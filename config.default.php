@@ -15,6 +15,30 @@ return array(
 	 */
 	'passhash' => [PASSWORD_BCRYPT, ['cost' => 12]],
 
+	/* Email is sent using PHP's builtin mail() function, which uses sendmail,
+	 * so you need to configure that too.
+	 * (Please don't actually use sendmail though,
+	 *  use some compatible alternative).
+	 * Note that, for development, Debian seems to already ship with Exim -
+	 * you can send emails to localhost and read them with a client such as
+	 * Claws Mail. */
+	'email' => 'iiet.pl <bccounts@example.org>',
+
+	/* The minimum delay between two emails sent to the same user, in seconds. */
+	'email_ratelimit' => 3600,
+
+	/* Send all emails to this address instead.
+	 * Meant to be used only for development. */
+	'email_override' => 'dzwdz@localhost',
+
+	/* Appened to the transcript_id in order to get an email. */
+	'studentsuffix' => '@student.example.org',
+
+	'mydomain' => 'http://localhost:8080',
+
+	/* The token needed to use reqtoken.php. */
+	'shared_token' => 'CHANGEME',
+
 	'services' => array(
 		// The key is used to identify the service internally and it might be
 		// visible to the user.
