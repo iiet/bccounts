@@ -62,13 +62,18 @@ class Token
 	}
 
 	public function getUserID(): int {
-		// TODO cache
-		$res = Database::getInstance()->runStmt('
-			SELECT user
-			FROM sessions
-			WHERE id = ?
-		', [$this->session])->fetch();
-		return $res['user'];
+		if ($this->user === null) {
+			$res = Database::getInstance()->runStmt('
+				SELECT user
+				FROM sessions
+				WHERE id = ?
+			', [$this->session])->fetch();
+			// Pretty much impossible outside of a super rare race condition
+			// with bin/cleanup.php.
+			assert($res !== false);
+			$this->user = $res['user'];
+		}
+		return $this->user;
 	}
 
 	/**
