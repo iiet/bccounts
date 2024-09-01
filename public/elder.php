@@ -5,8 +5,7 @@
 
 require(__DIR__ . '/../src/common.php');
 
-MySession::requireLogin();
-$sessToken = MySession::getToken();
+$sessToken = MySession::requireLogin();
 
 html_header('iiet.pl');
 
@@ -18,7 +17,7 @@ $elderStmt = Database::getInstance()->runStmt('
 $isElder = false;
 while (([$group] = $elderStmt->fetch())) {
 	$isElder = true; ?>
-	<h3><?=htmlspecialchars($group)?></h3>
+	<h3><?=hsc($group)?></h3>
 	<table class="table table-striped table-hover">
 		<thead><tr>
 			<th>Imię i nazwisko</th>
@@ -35,9 +34,9 @@ while (([$group] = $elderStmt->fetch())) {
 	', [$group]);
 	while (([$fullname, $transcript, $username] = $groupStmt->fetch())) { ?>
 		<tr>
-			<td><?= htmlspecialchars($fullname); ?></td>
-			<td><?= htmlspecialchars($transcript); ?></td>
-			<td><?= htmlspecialchars($username); ?></td>
+			<td><?= hsc($fullname); ?></td>
+			<td><?= hsc($transcript); ?></td>
+			<td><?= hsc($username); ?></td>
 		</tr>
 	<?php } ?>
 		</tbody>

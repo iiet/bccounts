@@ -4,7 +4,7 @@ require(__DIR__ . '/../src/common.php');
 $error = null;
 $success = null;
 
-function send_token(string $transcript) {
+function send_token(string $transcript): void {
 	global $error, $success, $conf;
 	$res = Database::getInstance()->runStmt('
 		SELECT id, email, regtoken, last_email
@@ -40,9 +40,7 @@ function send_token(string $transcript) {
 	$res = mymail($email, 'Rejestracja iiet.pl',
 		'Hej, ' .
 		'by dokończyć rejestrację wejdź na ' .
-		'<a href="'.htmlspecialchars($url).'">' .
-		htmlspecialchars($url) .
-		'</a>.'
+		'<a href="'.hsc($url).'">' .  hsc($url) .  '</a>.'
 	);
 	if (!$res) {
 		$error = 'Nie udało się wysłać maila potwierdzającego.';
@@ -52,29 +50,31 @@ function send_token(string $transcript) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+	$tok = @$_POST['token'];
+	$transcript = @$_POST['transcript'];
 	if ($conf['shared_token'] === null) {
 		$error = 'Rejestracja jest aktualnie wyłączona.';
-	} else if (!hash_equals($conf['shared_token'], @$_POST['token'])) {
+	} else if (!is_string($tok) || !hash_equals($conf['shared_token'], $tok)) {
 		$error = 'Podany token rejestracji jest niepoprawny.';
-	} else if (!isset($_POST['transcript'])) {
+	} else if (!is_string($transcript)) {
 		$error = 'Nie podano numeru indeksu.';
 	} else {
-		send_token($_POST['transcript']);
+		send_token($transcript);
 	}
 }
 
 html_header('iiet.pl');
 ?>
 <form class="w-100" style="max-width: 400px;" method="post">
-	<?php if ($error) { ?>
-		<div class="alert alert-danger"> <?= htmlspecialchars($error) ?> </div>
+	<?php if ($error !== null) { ?>
+		<div class="alert alert-danger"> <?= hsc($error) ?> </div>
 	<?php } ?>
-	<?php if ($success) { ?>
-		<div class="alert alert-success"> <?= htmlspecialchars($success) ?> </div>
+	<?php if ($success !== null) { ?>
+		<div class="alert alert-success"> <?= hsc($success) ?> </div>
 	<?php } ?>
 	<div class="my-3">
 		<label for="token">Token rejestracji:</label>
-		<input type="text" name="token" class="form-control" required value="<?=htmlspecialchars(@$_GET['token'])?>"/>
+		<input type="text" name="token" class="form-control" required value="<?=hsc(@$_GET['token'])?>"/>
 	</div>
 	<div class="my-3">
 		<label for="transcript">Numer indeksu:</label>

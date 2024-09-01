@@ -5,15 +5,18 @@ $error = null;
 $success = null;
 $minlen = $conf['passminlen'];
 
-MySession::requireLogin();
-$sessToken = MySession::getToken();
+$sessToken = MySession::requireLogin();
 $userinfo = Database::getInstance()->getUser($sessToken->getUserID());
+assert($userinfo !== null);
+assert($userinfo['password'] !== null); /* We should already have a password. */
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	$current = @$_POST['current'];
 	$new     = @$_POST['new'];
 	$confirm = @$_POST['confirm'];
-	if (strlen($new) < $minlen) {
+	if (!is_string($current) || !is_string($new) || !is_string($confirm)) {
+		$error = 'Formularz nie został w pełni wypełniony';
+	} else if (strlen($new) < $minlen) {
 		$error = 'Nowe hasło jest za krótkie.';
 	} else if ($new !== $confirm) {
 		$error = 'Podane nowe hasła nie są identyczne.';
@@ -38,10 +41,10 @@ html_header('iiet.pl');
 ?>
 <form class="w-100" style="max-width: 400px;" method="post">
 	<?php if ($error) { ?>
-		<div class="alert alert-danger"> <?= htmlspecialchars($error) ?> </div>
+		<div class="alert alert-danger"> <?= hsc($error) ?> </div>
 	<?php } ?>
 	<?php if ($success) { ?>
-		<div class="alert alert-success"> <?= htmlspecialchars($success) ?> </div>
+		<div class="alert alert-success"> <?= hsc($success) ?> </div>
 	<?php } ?>
 	<div class="mb-3">
 		<label for="current">Aktualne hasło:</label>

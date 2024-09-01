@@ -1,10 +1,10 @@
-<?php function html_header(string $title) { ?>
+<?php function html_header(string $title): void { ?>
 <!DOCTYPE html>
 <html>
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title><?= htmlspecialchars($title) ?></title>
+	<title><?= hsc($title) ?></title>
 	<!-- TODO vendor -->
 	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH" crossorigin="anonymous">
 </head>
@@ -19,7 +19,7 @@ $sessToken = MySession::getToken();
 if ($sessToken) {
 	$userinfo = Database::getInstance()->getUser($sessToken->getUserID());
 ?>
-		<span class="mx-2">Zalogowano jako <?= htmlspecialchars($userinfo['username']) ?></span>
+		<span class="mx-2">Zalogowano jako <?= hsc($userinfo['username']) ?></span>
 		<a href="/logout.php" class="btn btn-outline-primary">Wyloguj się</a>
 <?php } else { ?>
 		<a href="/login.php" class="btn btn-primary">Zaloguj się</a>
@@ -27,12 +27,12 @@ if ($sessToken) {
 	</header>
 <?php } // html_header end
 
-function html_footer() {
+function html_footer(): void {
 	global $conf;
 	?>
 	<footer class="py-3 mt-4 border-top mt-auto w-100 text-body-secondary">
 		bccounts, stworzone przez BIT.
-		<a href="<?= htmlspecialchars($conf['sourcelink']) ?>">kod</a>,
+		<a href="<?= hsc($conf['sourcelink']) ?>">kod</a>,
 		<a href="/privacy.php">polityka prywatności</a>
 		<!-- TODO contact -->
 	</footer>

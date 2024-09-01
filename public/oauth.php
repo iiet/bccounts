@@ -11,7 +11,7 @@ require(__DIR__ . '/../src/common.php');
  * Redirect the user to the specified redirect URI with the given query
  * parameters. Only relevant for /authorize.
  */
-function redirect_back(string $uri, array $param) {
+function redirect_back(string $uri, array $param): never {
 	$param['state'] = $_GET['state'];
 	$uri = $uri . '?' . http_build_query($param);
 	header('Location: ' . $uri);
@@ -22,23 +22,28 @@ function redirect_back(string $uri, array $param) {
  * Returns a JSON-formatted error from the token endpoint,
  * as specified by RFC 6749, 5.2. Error Response
  */
-function json_error(int $code, string $error, ?string $desc) {
+function json_error(int $code, string $error, ?string $desc): never {
 	// I'm assuming Content-Type was already set
 	http_response_code(400);
 	$param = array('error' => $error);
-	if ($desc) $param['error_description'] = $desc;
+	if ($desc !== null) {
+		$param['error_description'] = $desc;
+	}
 	echo json_encode($param) . "\n";
 	die();
 }
 
-function find_service(string $client_id) {
+/** @return ?array{string, array{redirect_uri: string,
+  *                              client_id: string,
+  *                              client_secret: string}} */
+function find_service(string $client_id): ?array {
 	global $conf;
 	foreach ($conf['services'] as $k => $service) {
 		if ($service['client_id'] === $client_id) {
 			return [$k, $service];
 		}
 	}
-	return false;
+	return null;
 }
 
 // RFC 6749, 5.1. Successful Response
@@ -50,19 +55,27 @@ $endpoint = $_SERVER['PATH_INFO'];
 if ($endpoint === '/authorize') {
 	MySession::requireLogin();
 	$sessToken = MySession::getToken();
+	$client_id = @$_GET['client_id'];
 	assert($sessToken !== null);
 
-	[$serviceName, $service] = find_service(@$_GET['client_id']);
-	if (!$serviceName) {
+	if (!is_string($client_id)) { // Satisfy Psalm.
 		http_response_code(403);
 		die('Bad client_id.');
 	}
+
+	[$serviceName, $service] = find_service($client_id);
+	if ($serviceName === null) {
+		http_response_code(403);
+		die('Bad client_id.');
+	}
+	assert($service !== null); // Get Psalm to shut up.
 
 	$uri = @$_GET['redirect_uri'];
 	if ($uri !== $service['redirect_uri']) {
 		http_response_code(403);
 		die('Bad redirect_uri.');
 	}
+	$uri = $service['redirect_uri']; // This fixes 3 "errors" in Psalm. Yeah.
 
 	if (@$_GET['response_type'] != 'code') {
 		// RFC6749, 4.1.2.1. Error Response
@@ -94,10 +107,15 @@ if ($endpoint === '/authorize') {
 		json_error(400, 'invalid_client', 'no authorization method used');
 	}
 
+	if (!is_string($client_id) || !is_string($client_secret)) {
+		json_error(400, 'invalid_client', 'bad authorization params');
+	}
+
 	[$serviceName, $service] = find_service($client_id);
-	if (!$serviceName) {
+	if ($serviceName === null) {
 		json_error(400, 'invalid_client', 'client_id not recognized');
 	}
+	assert($service !== null);
 	if (!hash_equals($service['client_secret'], $client_secret)) {
 		json_error(400, 'invalid_client', 'bad client_secret');
 	}
@@ -111,7 +129,12 @@ if ($endpoint === '/authorize') {
 		// service anyways.  If you want to change that, you'd need to add a
 		// redirect_uri field to the tokens table.
 
-		$tokAuth = Token::accept(@$_POST['code'], TokenType::OAuthorization);
+		$code = @$_POST['code'];
+		if (!is_string($code)) {
+			json_error(400, 'invalid_client', 'invalid code parameter');
+		}
+
+		$tokAuth = Token::accept($code, TokenType::OAuthorization);
 		if (!$tokAuth || $tokAuth->service !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
 		}
@@ -133,8 +156,14 @@ if ($endpoint === '/authorize') {
 			'expires_in' => $conf['expires'][TokenType::OAccess->value],
 		)) . "\n";
 	} else if ($grant_type == 'refresh_token') {
-		// TODO checks if current accounts check the client secret on refresh
-		$tokRefresh = Token::accept(@$_POST['refresh_token'], TokenType::ORefresh);
+		// TODO checks if the current implementation checks the client secret on refresh
+
+		$code = @$_POST['refresh_token'];
+		if (!is_string($code)) {
+			json_error(400, 'invalid_client', 'invalid refresh_token parameter');
+		}
+
+		$tokRefresh = Token::accept(@$code, TokenType::ORefresh);
 		if (!$tokRefresh || $tokRefresh->service !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
 		}
@@ -164,7 +193,8 @@ if ($endpoint === '/authorize') {
 		die();
 	}
 	$data   = Database::getInstance()->getUser($tok->getUserID());
-	$groups = Database::getInstance()->getGroups($data['id']);
+	$groups = Database::getInstance()->getGroups($tok->getUserID());
+	assert($data !== null);
 	echo json_encode(array(
 		'user_id'    => $data['legacy_id'],
 		'login'      => $data['username'],

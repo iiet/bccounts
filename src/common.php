@@ -62,6 +62,7 @@ class Token
 	}
 
 	public function getUserID(): int {
+		// TODO cache
 		$res = Database::getInstance()->runStmt('
 			SELECT user
 			FROM sessions
@@ -187,19 +188,23 @@ abstract class MySession
 
 	/**
 	 * If the user isn't logged in, redirect them to the login page and
-	 * kill the script.
+	 * kill the script. Otherwise, return the token.
 	 */
-	public static function requireLogin(): void {
-		if (self::getToken() !== null) return;
-		$uri = '/login.php?redir=' . urlencode($_SERVER['REQUEST_URI']);
-		header('Location: ' . $uri);
-		die();
+	public static function requireLogin(): Token {
+		$token = self::getToken();
+		if ($token === null) {
+			$uri = '/login.php?redir=' . urlencode($_SERVER['REQUEST_URI']);
+			header('Location: ' . $uri);
+			die();
+		} else {
+			return $token;
+		}
 	}
 }
 
 class Database
 {
-	protected static $instance = null;
+	protected static ?Database $instance = null;
 	public PDO $dbh;
 	protected ?PDOStatement $lookup_stmt = null;
 	protected ?PDOStatement $group_stmt = null;
@@ -214,13 +219,17 @@ class Database
 		$this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	}
 
-	public static function getInstance() {
+	public static function getInstance(): Database {
 		if (self::$instance === null) {
 			self::$instance = new Database();
 		}
 		return self::$instance;
 	}
 
+	/** @return array{id: int, email: string, username: ?string, password: ?string,
+	 *                fullname: ?string, start_year: ?int, transcript_id: ?int,
+	 *                legacy_id: string, first_name: ?string, last_name: ?string}
+	 */
 	public function getUser(int $uid): ?array {
 		$res = $this->runStmt('
 			SELECT
@@ -235,7 +244,9 @@ class Database
 		}
 		// Yeah, this is stupid, but so is having a separate first name
 		// and last name field in the first place.
-		[$res['first_name'], $res['last_name']] = explode(' ', $res['fullname']);
+		if ($res['fullname'] !== null) {
+			[$res['first_name'], $res['last_name']] = explode(' ', $res['fullname']);
+		}
 		return $res;
 	}
 
@@ -294,6 +305,16 @@ function mymail(string $to, string $subject, string $contents): bool {
 function mylog(string $to): void {
 	$b = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1)[0];
 	error_log( pathinfo($b['file'])['basename'] . ':' . $b['line'] . ' ' . $to );
+}
+
+/**
+ * A wrapper around htmlspecialchars, mostly inspired by the one Dokuwiki has.
+ * This one is mostly meant to get static analyzers to shut the fuck up
+ * about me passing a potentially non-string argument to htmlspecialchars.
+ * @psalm-suppress ForbiddenCode
+ */
+function hsc(mixed $v): string {
+	return htmlspecialchars(strval($v));
 }
 
 $conf = require(__DIR__ . '/../config.php');

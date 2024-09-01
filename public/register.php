@@ -3,8 +3,8 @@ require(__DIR__ . '/../src/common.php');
 
 html_header('iiet.pl');
 
-function die_with_dialog(string $err) {
-	echo '<div class="alert alert-danger">' . htmlspecialchars($err) . '</div>';
+function die_with_dialog(string $err): never {
+	echo '<div class="alert alert-danger">' . hsc($err) . '</div>';
 	html_footer();
 	die();
 }
@@ -25,12 +25,12 @@ if (!$regData) {
 	die_with_dialog('Ten link stracił ważność (lub nigdy nie był ważny).');
 }
 
-function register() {
+function register(): void {
 	global $conf, $error, $passminlen;
 
 	// Input validation
 	foreach (['user', 'new', 'confirm'] as $k) {
-		if (!isset($_POST[$k])) {
+		if (!isset($_POST[$k]) || !is_string($_POST[$k])) {
 			$error = 'Formularz nie został w pełni wypełniony';
 			return;
 		}
@@ -93,8 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 ?>
 <form class="w-100" style="max-width: 600px;" method="post">
-	<?php if ($error) { ?>
-		<div class="alert alert-danger"> <?= htmlspecialchars($error) ?> </div>
+	<?php if ($error !== null) { ?>
+		<div class="alert alert-danger"> <?= hsc($error) ?> </div>
 	<?php } ?>
 	<p>
 	Twoje konto na platformie studenckiej jest już prawie gotowe! <br>
@@ -104,21 +104,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 		<label for="fullname">Imię i nazwisko:</label>
 		<input
 			type="text" name="fullname" class="form-control" disabled
-			value="<?=htmlspecialchars($fullname)?>"
+			value="<?=hsc($fullname)?>"
 		/>
 	</div>
 	<div class="mb-2">
 		<label for="transcript">Numer indeksu:</label>
 		<input
 			type="text" name="transcript" class="form-control" disabled
-			value="<?=htmlspecialchars($transcript)?>"
+			value="<?=hsc($transcript)?>"
 		/>
 	</div>
 	<div class="mb-2">
 		<label for="transcript">Email:</label>
 		<input
 			type="text" name="transcript" class="form-control" disabled
-			value="<?=htmlspecialchars($email)?>"
+			value="<?=hsc($email)?>"
 		/>
 	</div>
 	<div class="mb-2">
@@ -127,7 +127,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 			type="text" name="user" class="form-control"
 			aria-describedby="userinfo" required minlength=3 maxlength=20
 			pattern="[A-Za-z][A-Za-z0-9_]+"
-			value="<?=htmlspecialchars(@$_POST['user'])?>" autofocus
+			value="<?=hsc(@$_POST['user'])?>" autofocus
 		/>
 		<div id="userinfo" class="form-text">
 			Od 3 do 20 znaków alfanumerycznych, bez "ogonków". Musi się zaczynać od litery.

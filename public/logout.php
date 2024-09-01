@@ -7,16 +7,20 @@ if ($sessToken) {
 		// Log out a different session of the same user
 		$other = $_GET['session'];
 
-		$res = Database::getInstance()->runStmt('
-			SELECT user
-			FROM sessions
-			WHERE id = ?
-		', [$other])->fetch();
-		if ($res && $res['user'] == $sessToken->getUserID()) {
-			MySession::logout($other);
-			header('Location: /');
-			die();
+		if (is_numeric($other)) {
+			$res = Database::getInstance()->runStmt('
+				SELECT user
+				FROM sessions
+				WHERE id = ?
+			', [$other])->fetch();
+			if ($res && $res['user'] == $sessToken->getUserID()) {
+				MySession::logout((int)$other);
+				header('Location: /');
+				die();
+			}
 		}
+
+		// TODO show error
 	} else {
 		// Log out of the current session
 		MySession::logout($sessToken->session);

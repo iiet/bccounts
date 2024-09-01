@@ -22,8 +22,13 @@ $start_year = @$opts['y']; // nullable
 $groups = $opts['g'];
 
 // Verify the year looks correct.
-if ($start_year != null && preg_match('/^20[0-9][0-9]$/', $start_year) !== 1) {
-	die($start_year . " doesn't look like a valid year.\n");
+if ($start_year != null) {
+	if (!is_string($start_year)) {
+		die("\$opts['y'] is not a string. Did you pass -y multiple times?\n");
+	}
+	if (preg_match('/^20[0-9][0-9]$/', $start_year) !== 1) {
+		die($start_year . " doesn't look like a valid year.\n");
+	}
 }
 
 // Verify the groups look somewhat correct.

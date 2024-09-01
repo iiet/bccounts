@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!-- This config format is so fucking verbose.
+     You need to install Psalm on your own, I'm using the .phar
+     (mostly out of paranoia - doing it this way means I can run it under bwrap
+      just fine)
+  -->
+<psalm
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xmlns="https://getpsalm.org/schema/config"
+errorLevel="2"
+>
+	<projectFiles>
+		<directory name="bin"/>
+		<directory name="public"/>
+		<directory name="src"/>
+	</projectFiles>
+	<issueHandlers>
+		<ForbiddenCode>
+			<errorLevel type="suppress">
+				<directory name="bin" />
+			</errorLevel>
+		</ForbiddenCode>
+
+		<!-- I do want asserts to be redundant in some cases. -->
+		<RedundantCondition errorLevel="suppress" />
+		<TypeDoesNotContainNull errorLevel="suppress" />
+
+		<!-- Sadly this one is a bit too stupid when it comes to e.g.
+		     checking $_SERVER['REQUEST_METHOD'].
+		     Yes, I could use isset() before comparing it, but that's too
+		     much visual noise. -->
+		<PossiblyUndefinedArrayOffset errorLevel="suppress" />
+
+		<PossiblyNullArrayAccess>
+			<errorLevel type="suppress">
+				<file name="src/template.php" />
+			</errorLevel>
+		</PossiblyNullArrayAccess>
+		<PossiblyNullArgument>
+			<errorLevel type="suppress">
+				<file name="src/template.php" />
+			</errorLevel>
+		</PossiblyNullArgument>
+	</issueHandlers>
+	<forbiddenFunctions>
+		<function name="htmlspecialchars" />
+	</forbiddenFunctions>
+</psalm>

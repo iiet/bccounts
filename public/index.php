@@ -1,10 +1,10 @@
 <?php
 require(__DIR__ . '/../src/common.php');
 
-MySession::requireLogin();
-$sessToken = MySession::getToken();
+$sessToken = MySession::requireLogin();
 $userinfo = Database::getInstance()->getUser($sessToken->getUserID());
 $groups = Database::getInstance()->getGroups($sessToken->getUserID());
+assert($userinfo !== null && $groups !== null);
 
 html_header('iiet.pl');
 ?>
@@ -13,7 +13,7 @@ html_header('iiet.pl');
 	<div class="card-header">Nasze serwisy:</div>
 	<ul class="list-group list-group-flush">
 <?php foreach ($conf['frontservices'] as $k => $v) { ?>
-		<li class="list-group-item"><a href="<?=htmlspecialchars($v)?>"><?=htmlspecialchars($k)?></a></li>
+		<li class="list-group-item"><a href="<?=hsc($v)?>"><?=hsc($k)?></a></li>
 <?php } ?>
 	</ul>
 </div>
@@ -30,15 +30,15 @@ $data = array(
 foreach ($data as $k => $name) {
 ?>
 		<tr>
-			<th class="text-end"><?= htmlspecialchars($name) ?></th>
-			<td><?= htmlspecialchars($userinfo[$k]) ?></td>
+			<th class="text-end"><?= hsc($name) ?></th>
+			<td><?= hsc($userinfo[$k]) ?></td>
 		</tr>
 <?php } ?>
 		<tr>
 			<th class="text-end">Grupy:</th>
 			<td>
 <?php foreach ($groups as $group) {
-	echo '<span class="badge bg-dark me-1">' . htmlspecialchars($group) . '</span>';
+	echo '<span class="badge bg-dark me-1">' . hsc($group) . '</span>';
 } ?>
 			</td>
 		</tr>
@@ -64,7 +64,7 @@ while (([$session, $ctime, $ip] = $stmt->fetch())) { ?>
 				->setTimezone(new DateTimeZone('Europe/Warsaw'))
 				->format('Y-m-d H:i:s')
 			?>,
-			<?= htmlspecialchars($ip) ?>
+			<?= hsc($ip) ?>
 			<?php
 			if ($sessToken->session != $session) {
 				// $session is currently only an integer, but the urlencode
