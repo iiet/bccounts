@@ -137,7 +137,10 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	</div>
 	<div class="mb-2">
 		<label for="new">Hasło:</label>
-		<input type="password" name="new" class="form-control" aria-describedby="passinfo" minlength=<?=$passminlen?> required/>
+		<input
+			type="password" name="new" class="form-control"
+			aria-describedby="passinfo" minlength=<?=$passminlen?> required
+		/>
 		<div id="passinfo" class="form-text">
 			Przynajmniej <?=$passminlen?> znaków. <br>
 			Swoją drogą, korzystasz z menadżera haseł, prawda? :)
@@ -145,11 +148,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	</div>
 	<div class="mb-2">
 		<label for="confirm">Powtórz hasło:</label>
-		<input type="password" name="confirm" class="form-control" minlength=<?=$passminlen?> required/>
+		<input
+			type="password" name="confirm" class="form-control"
+			minlength=<?=$passminlen?> required
+		/>
 	</div>
 	<div class="my-3 alert alert-warning">
 		Kontynuując wyrażasz zgodę na przetwarzanie swoich danych osobowych przez
-		<a href="https://knbit.agh.edu.pl">Koło Naukowe BIT</a>.
+		<a href="<? =hsc($conf['contactlink']) ?>">
+		<?= hsc($conf['contactname']) ?></a>.
 		Detale opisane są w <a href="/privacy.php">polityce prywatności</a>.
 	</div>
 	<button class="btn btn-primary">Zarejestruj się</button>

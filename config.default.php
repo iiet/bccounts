@@ -86,5 +86,7 @@ return array(
 	),
 
 	'sourcelink' => 'https://git.iiet.pl/iiet/bccounts',
+	/* Used in the footer and register form. */
 	'contactlink' => 'https://example.com',
+	'contactname' => 'Example Organization',
 );
