@@ -3,12 +3,12 @@
  *
  * php bin/invite.php -y 2020 -g "students" -g "2020-2025"    students.csv
  * php bin/invite.php -y 2020 -g "students" -g "2020-2022 DS" students.csv
- *   -y START_YEAR   - Rok rozpoczęcia studiów.
- *   -g group        - Nazwy grup nowych użytkowników.
-                       Przestrzegaj aktualnego formatu!
- * students.csv jest plikiem CSV bez nagłówka w następującym formacie:
+ *   -y START_YEAR   - The year of enrollment. Optional.
+ *   -g group        - The groups to add the new users to.
+                       Please keep them consistent with the current format!
+ * students.csv is a CSV file, without a header, in the following format:
  *   fullname,transcript_id
- * na przykład:
+ * for example:
  *   Jan Kowalski,123456
  *   Anna Nowak,123457
  */

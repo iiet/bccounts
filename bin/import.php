@@ -1,5 +1,7 @@
 <?php
 /* Imports users from a CSV file on stdin.
+ * You probably want to use bin/invite.php instead - I'm only using this to
+ * import users from the previous system.
  * username,email,password,fullname,start_year,transcript_id,legacy_id,groups */
 
 require(__DIR__ . '/../src/common.php');

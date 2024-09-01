@@ -12,14 +12,16 @@ function send_token(string $transcript): void {
 		WHERE transcript_id = ?
 	', [$transcript])->fetch();
 	if ($res === false) {
-		// Tak, to pozwala stwierdzić numery indeksów niezarejestrowanych
-		// ludzi na roku. Jednak jeśli się ma token rocznika, to znaczy
-		// że się jest studentem - więc i tak się prędzej czy później
-		// dostanie listę indeksów przy okazji wyników kolokwium/egzaminu.
-		//
-		// Mógłbym tak samo odpowiadać bez znaczenia, czy indeks jest w bazie,
-		// czy nie, ale wtedy nie mógłbym poinformować kogoś jeśli natknął
-		// sie na ratelimit.
+		// This allows enumerating the transcript numbers of unregistered people
+		// if one posseses the shared registration token.
+		// I don't think this is an issue for two reasons:
+		// 1. If you have the registration token, you're probably a student.
+		//    You'll probably receive a complete list of transcript numbers
+		//    together with the results of one of the exams anyways.
+		// 2. I could try responding with the same message no matter what,
+		//    but this sucks UX-wise - in particular, I won't be able to tell
+		//    people when they hit the ratelimit, which would be a pretty
+		//    confusing experience.
 		$error = 'Nie mamy twojego numeru indeksu w bazie. Może już się zarejestrowałeś?';
 		return;
 	}
