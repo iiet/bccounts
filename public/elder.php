@@ -18,11 +18,11 @@ $isElder = false;
 while (([$group] = $elderStmt->fetch())) {
 	$isElder = true; ?>
 	<h3><?=hsc($group)?></h3>
-	<table class="table table-striped table-hover">
+	<table class="table table-striped table-hover mb-5">
 		<thead><tr>
+			<th>Nazwa użytkownika</th>
 			<th>Imię i nazwisko</th>
 			<th>Numer indeksu</th>
-			<th>Nazwa użytkownika</th>
 		</tr></thead>
 		<tbody>
 	<?php
@@ -34,16 +34,46 @@ while (([$group] = $elderStmt->fetch())) {
 	', [$group]);
 	while (([$fullname, $transcript, $username] = $groupStmt->fetch())) { ?>
 		<tr>
+			<td><?= hsc($username); ?></td>
 			<td><?= hsc($fullname); ?></td>
 			<td><?= hsc($transcript); ?></td>
-			<td><?= hsc($username); ?></td>
 		</tr>
 	<?php } ?>
 		</tbody>
 	</table>
-	<?php
-}
+<?php }
 
 if (!$isElder) { ?>
 <div class="alert alert-danger"> Nie jesteś starost(k)ą. </div>
+<?php } else {
+// Let elders see all other users with elder privileges.
+// This doesn't handle elders of multiple groups too well, but it's good enough.
+
+$stmt = Database::getInstance()->runStmt('
+	SELECT users.username, users.fullname, usergroups."group"
+	FROM usergroups
+	JOIN users ON usergroups.user = users.id
+	WHERE elder=1
+', []);
+?>
+	<h3>Użytkownicy z uprawnieniami starosty:</h3>
+	<table class="table table-striped table-hover">
+		<thead><tr>
+			<th>Nazwa użytkownika</th>
+			<th>Imię i nazwisko</th>
+			<th>Grupa</th>
+		</tr></thead>
+		<tbody>
+<?php
+while (([$username, $fullname, $group] = $stmt->fetch())) { ?>
+		<tr>
+			<td><?= hsc($username); ?></td>
+			<td><?= hsc($fullname); ?></td>
+			<td><?= hsc($group); ?></td>
+		</tr>
+<?php } ?>
+		</tbody>
+	</table>
 <?php }
+
+html_footer();
