@@ -62,12 +62,11 @@ class Token
 	}
 
 	public function getUserID(): int {
-		$stmt = Database::getInstance()->runStmt('
+		$res = Database::getInstance()->runStmt('
 			SELECT user
 			FROM sessions
 			WHERE id = ?
-		', [$this->session]);
-		$res = $stmt->fetch();
+		', [$this->session])->fetch();
 		return $res['user'];
 	}
 
@@ -78,13 +77,12 @@ class Token
 	public static function accept(string $repr, TokenType $type): ?Token {
 		global $conf;
 
-		$stmt = Database::getInstance()->runStmt('
+		$res = Database::getInstance()->runStmt('
 			SELECT tokens.session, tokens.expires, sessions.expires, tokens.service
 			FROM tokens
 			JOIN sessions ON tokens.session = sessions.id
 			WHERE token = ? AND type = ?
-		', [$repr, $type->value]);
-		$res = $stmt->fetch();
+		', [$repr, $type->value])->fetch();
 		if ($res === false) return null;
 		[$session, $tokExpires, $sessExpires, $service] = $res;
 
@@ -105,14 +103,12 @@ abstract class MySession
 		global $conf;
 
 		// TODO log "weird" errors
-		$stmt = Database::getInstance()->runStmt('
+		// I'm assuming we never get multiple results - usernames can't contain @.
+		$res = Database::getInstance()->runStmt('
 			SELECT id, password
 			FROM users
 			WHERE username = ? OR email = ?
-		', [$user, $user]);
-		if (!$stmt) return false;
-		// I'm assuming we never get multiple results - usernames can't contain @.
-		$res = $stmt->fetch();
+		', [$user, $user])->fetch();
 		if (!$res) return false;
 		[$id, $hash] = $res;
 		if ($hash === null) return false;
@@ -123,13 +119,11 @@ abstract class MySession
 		// It's much saner than lastInsertId, IMO.
 		$time = time();
 		$expires = $time + $conf['expires'][TokenType::Session->value];
-		$stmt = Database::getInstance()->runStmt('
+		$res = Database::getInstance()->runStmt('
 			INSERT INTO sessions (user, ctime, expires, ip)
 			VALUES (?, ?, ?, ?)
 			RETURNING id
-		', [ $id, $time, $expires, $_SERVER['REMOTE_ADDR'] ]);
-		if (!$stmt) return false;
-		$res = $stmt->fetch();
+		', [ $id, $time, $expires, $_SERVER['REMOTE_ADDR'] ])->fetch();
 		if ($res == false) return false;
 
 		// Create and save the token.
@@ -152,17 +146,14 @@ abstract class MySession
 		// all the tokens linked to the session, and AUTOINCREMENT on sessions
 		// should prevent ID reuse, but, just to be sure, let's delete the
 		// tokens anyways.
-		$stmt = Database::getInstance()->runStmt('
+		Database::getInstance()->runStmt('
 			DELETE FROM tokens
 			WHERE session = ?
 		', [$session]);
-		if (!$stmt) die(); // Not taking any chances.
-
-		$stmt = Database::getInstance()->runStmt('
+		Database::getInstance()->runStmt('
 			DELETE FROM sessions
 			WHERE id = ?
 		', [$session]);
-		if (!$stmt) die();
 	}
 
 	private static function setToken(?Token $tok): void {
@@ -218,7 +209,9 @@ class Database
 		$this->dbh = new PDO($conf['pdo_dsn'], $conf['pdo_user'], $conf['pdo_pass']);
 		// SQLite doesn't enforce foreign key relations by default.
 		$this->dbh->exec('PRAGMA foreign_keys = ON;');
-
+		// Throw an exception on error.
+		// This is already the default (since 8.0.0), but I want to be explicit.
+		$this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	}
 
 	public static function getInstance() {
@@ -229,12 +222,11 @@ class Database
 	}
 
 	public function getUser(int $uid): ?array {
-		$stmt = $this->runStmt('
+		$res = $this->runStmt('
 			SELECT
 			id, email, username, password, fullname, start_year, transcript_id, legacy_id
 			FROM users WHERE id = ?
-		', [$uid]);
-		$res = $stmt->fetch(PDO::FETCH_ASSOC);
+		', [$uid])->fetch(PDO::FETCH_ASSOC);
 		if ($res === false) return null;
 
 		// Backwards compat stuff.
@@ -259,13 +251,16 @@ class Database
 		return $groups;
 	}
 
-	public function runStmt(string $tmpl, array $param): ?PDOStatement {
+	public function runStmt(string $tmpl, array $param): PDOStatement {
 		// TODO cache statements?
 		$stmt = $this->dbh->prepare($tmpl);
 		if ($stmt && $stmt->execute($param)) {
 			return $stmt;
 		} else {
-			return null;
+			// This branch shouldn't ever be taken, as PDO::ATTR_ERRMODE is set
+			// to PDO::ERRMODE_EXCEPTION, but hey - better safe than sorry.
+			mylog('runStmt failed');
+			die();
 		}
 	}
 

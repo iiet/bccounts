@@ -64,7 +64,7 @@ function register() {
 		WHERE regtoken = ?
 		LIMIT 1
 	', [$username, $hash, time(), $token]);
-	if (!$stmt || $stmt->rowCount() != 1) {
+	if ($stmt->rowCount() != 1) {
 		// We've verified that this link is still valid before calling this
 		// function, so this UPDATE should always succeed.
 		$error = 'Coś poszło nie tak. Skontaktuj się z administracją.';

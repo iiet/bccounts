@@ -106,7 +106,6 @@ foreach ($data as $row) {
 	// but the email is - so I'm using it to ensure no duplicates are entered.
 	$email = $transcript . $conf['studentsuffix'];
 
-	// TODO make runStmt guaranteed to succeed
 	$token = random_token();
 	$stmt = Database::getInstance()->runStmt('
 		INSERT OR IGNORE INTO users
@@ -114,9 +113,6 @@ foreach ($data as $row) {
 		VALUES (?, ?, ?, ?, ?)
 		RETURNING id
 	', [$email, $fullname, $start_year, $transcript, $token]);
-	if (!$stmt) {
-		die("SQL statement errored out.\n");
-	}
 	// Needs to be a fetchAll, otherwise the commit at the end fails.
 	$res = $stmt->fetchAll();
 	if (count($res) === 0) { // Didn't insert:
@@ -131,13 +127,10 @@ foreach ($data as $row) {
 
 	// Alright, this is a new user. Give them the correct groups.
 	foreach ($groups as $g) {
-		$stmt = Database::getInstance()->runStmt('
+		Database::getInstance()->runStmt('
 			INSERT OR IGNORE INTO usergroups ("user", "group", "elder")
 			VALUES (?, ?, 0)
 		', [$uid, $g]);
-		if (!$stmt) {
-			die("SQL statement errored out.\n");
-		}
 	}
 
 	echo "ADDED $email $token\n";

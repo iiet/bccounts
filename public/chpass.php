@@ -13,7 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	$current = @$_POST['current'];
 	$new     = @$_POST['new'];
 	$confirm = @$_POST['confirm'];
-	if (strlen($new) < $minpasslen) {
+	if (strlen($new) < $minlen) {
 		$error = 'Nowe hasło jest za krótkie.';
 	} else if ($new !== $confirm) {
 		$error = 'Podane nowe hasła nie są identyczne.';
@@ -26,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 			SET password = ?, mtime = ?
 			WHERE id = ?
 		', [$hash, time(), $sessToken->getUserID()]);
-		if (!$stmt || $stmt->rowCount() != 1) {
+		if ($stmt->rowCount() != 1) {
 			$error = 'Coś się zjebało.';
 		} else {
 			$success = 'Zmieniono hasło.';
