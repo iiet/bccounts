@@ -116,6 +116,21 @@ CREATE TABLE IF NOT EXISTS "tokens" (
 CREATE INDEX IF NOT EXISTS "tokens_session"
 ON "tokens"("session");
 
+/* Tokens used for password recovery.
+ *
+ * I debated adding a ctime field so I could compare it with users.mtime
+ * and prevent changing the password using the recovery link - but that
+ * allows you to lock out the original owner of the account by changing the
+ * password fast enough to kill all the recovery tokens. */
+CREATE TABLE IF NOT EXISTS "recovery_tokens" (
+	"token" TEXT NOT NULL UNIQUE,
+	"user" INTEGER NOT NULL UNIQUE,
+	"expires" INTEGER,
+	PRIMARY KEY("token"),
+	FOREIGN KEY ("user") REFERENCES "users"("id")
+	ON UPDATE RESTRICT ON DELETE CASCADE
+);
+
 /* Notable omission: a clients table. The recognized clients are instead stored
  * in config.php.
  * The previous implementation stored the clients in the database too...

@@ -25,7 +25,7 @@ return array(
 	'email' => 'iiet.pl <bccounts@example.org>',
 
 	/* The minimum delay between two emails sent to the same user, in seconds. */
-	'email_ratelimit' => 3600,
+	'email_ratelimit' => 0, // XXX only for development!
 
 	/* Send all emails to this address instead.
 	 * Meant to be used only for development. */
@@ -73,6 +73,9 @@ return array(
 		/* There's no reason for the refresh token to last shorter than the
 		 * session. */
 		TokenType::ORefresh->value       => 6 * 30 * 24 * 60 * 60,
+
+		/* Password recovery tokens. */
+		'recovery'                       => 24 * 60 * 60,
 	),
 
 	// The services listed on the front page.

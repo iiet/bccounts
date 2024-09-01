@@ -2,7 +2,7 @@
 
 /**
  * Generates a random string that can be used as a secret token.
- * Used by class Token and by bin/invite.php.
+ * Used by class Token, bin/invite.php, public/recovery.php.
  */
 function random_token(): string {
 	// Generate 32*8=256 bits of entropy and encode it with base64url.
@@ -24,8 +24,9 @@ enum TokenType: string
 }
 
 /**
- * Represents an authenticated, valid "token" verifying permission to do
- * something as the user. Used for OAuth2 tokens and session tokens. */
+ * Represents an authenticated, valid "token" bound to an user session.
+ * Used for OAuth2 tokens and session tokens. */
+// TODO rename to SessionToken to disambiguate from the other sorts of tokens?
 class Token
 {
 	public TokenType $type;
