@@ -33,8 +33,8 @@ function html_footer(): void {
 	<footer class="py-3 mt-4 border-top mt-auto w-100 text-body-secondary">
 		bccounts, stworzone przez BIT.
 		<a href="<?= hsc($conf['sourcelink']) ?>">kod</a>,
-		<a href="/privacy.php">polityka prywatności</a>
-		<!-- TODO contact -->
+		<a href="/privacy.php">polityka prywatności</a>,
+		<a href="<?= hsc($conf['contactlink']) ?>">kontakt</a>
 	</footer>
 </div>
 </body>

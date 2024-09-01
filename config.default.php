@@ -86,4 +86,5 @@ return array(
 	),
 
 	'sourcelink' => 'https://git.iiet.pl/iiet/bccounts',
+	'contactlink' => 'https://example.com',
 );
