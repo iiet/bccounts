@@ -276,7 +276,10 @@ class Database
 
 		// Backwards compat stuff.
 		if ($res['legacy_id'] === null) {
-			$res['legacy_id'] = 'new_' . $res['id'];
+			// Pad to 20 characters - the previous IDs were 20 character long.
+			$lid = "NOTLEGACY";
+			$lid = $lid . str_pad($res['id'], 20 - strlen($lid), '0', STR_PAD_LEFT);
+			$res['legacy_id'] = $lid;
 		}
 		// Yeah, this is stupid, but so is having a separate first name
 		// and last name field in the first place.
