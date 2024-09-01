@@ -1,6 +1,12 @@
 <?php
 require(__DIR__ . '/../src/common.php');
 
+// Vulnerable to CSRF - sadly, the previous app thought that was a feature,
+// so I'm leaving it as is for now.
+// TODO fix CSRF and add a "bounce" logout page
+
+$error = null;
+
 $sessToken = MySession::getToken();
 if ($sessToken) {
 	if (isset($_GET['session'])) {
@@ -19,8 +25,7 @@ if ($sessToken) {
 				die();
 			}
 		}
-
-		// TODO show error
+		$error = 'Nie udało się wylogować podanej sesji.';
 	} else {
 		// Log out of the current session
 		MySession::logout($sessToken->session);
@@ -28,14 +33,17 @@ if ($sessToken) {
 }
 
 html_header('iiet.pl');
-?>
+if ($error !== null) { ?>
+<div class="alert alert-danger"> <?= hsc($error) ?> </div>
+<?php } else { ?>
 <div class="w-100" style="max-width: 400px;">
+<div class="alert alert-success"> Wylogowano cię. </div>
 <p>
-Wylogowano cię.
-Możesz wciąż być zalogowany w pozostałych serwisach,
-bo nie do końca przemyślałem jak to wszystko będzie działać
-i nie mam możliwości cię wylogować.
-Ups.
+Ze względu na ograniczenia techniczne twoje sesje w innych serwisach mogą
+być jeszcze aktywne przez kilka godzin.
+Jeśli jesteś na współdzielonym komputerze,
+najlepiej wyloguj się z nich ręcznie.
 </p>
 </div>
-<?php html_footer();
+<?php }
+html_footer();
