@@ -42,7 +42,7 @@ Jest to celowo "prymitywny" kod.
 
 ### testowanie OAuth
 1. Wejdź na https://oauthdebugger.com/, ustaw poprawny Authorize URI (`http://localhost:8080/oauth.php/authorize`), i client ID. `response_type=code`, `response_mode=query`.
-2. Przekopiuj "ciało POST" z kroku drugiego w debuggerze do `curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d ^C localhost:8080/oauth.php/token`.
+2. Przekopiuj "ciało POST" z kroku drugiego w debuggerze do `curl -H "Content-Type: application/x-www-form-urlencoded" -X POST -d @- localhost:8080/oauth.php/token`.
 3. Przekopiuj uzyskany access token do `curl -H "Authorization: Bearer $(cat)" localhost:8080/oauth.php/userinfo`.
 
 Zakładam że resztę wykombinujesz.
