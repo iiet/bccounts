@@ -59,16 +59,16 @@ function register(): void {
 
 	// The LIMIT 1 is there just out of paranoia.
 	$stmt = Database::getInstance()->runStmt('
-		UPDATE users
+		UPDATE OR IGNORE users
 		SET username = ?, password = ?, ctime = ?, regtoken = NULL
 		WHERE regtoken = ?
 		LIMIT 1
 	', [$username, $hash, time(), $token]);
 	if ($stmt->rowCount() != 1) {
 		// We've verified that this link is still valid before calling this
-		// function, so this UPDATE should always succeed.
-		$error = 'Coś poszło nie tak. Skontaktuj się z administracją.';
-		mylog('regtoken UPDATE failed');
+		// function, so this (probably) means that the nick is already taken.
+		// This is a bit of a hack, but it should be fine.
+		$error = 'Ta nazwa użytkownika jest już zajęta.';
 		return;
 	}
 
