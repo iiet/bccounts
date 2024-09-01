@@ -86,7 +86,7 @@ if ($endpoint === '/authorize') {
 		));
 	}
 
-	$tok = new Token(TokenType::OAuthorization, $serviceName, null, $sessToken->session);
+	$tok = new SessionToken(TokenType::OAuthorization, $serviceName, null, $sessToken->session);
 	redirect_back($uri, array(
 		'code' => $tok->export(),
 	));
@@ -122,7 +122,7 @@ if ($endpoint === '/authorize') {
 
 	$grant_type = @$_POST['grant_type'];
 	if ($grant_type === 'authorization_code') {
-		// RFC6749, 4.1.3. Access Token Request
+		// RFC6749, 4.1.3. Access SessionToken Request
 
 		// The RFC says I MUST check the redirect_uri.
 		// I don't need to do that, as there's only one valid redirect_uri per
@@ -135,13 +135,13 @@ if ($endpoint === '/authorize') {
 		}
 
 		// Don't allow reuse of authorization codes per the RFC.
-		$tokAuth = Token::acceptOnce($code, TokenType::OAuthorization);
+		$tokAuth = SessionToken::acceptOnce($code, TokenType::OAuthorization);
 		if (!$tokAuth || $tokAuth->service !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
 		}
 
-		$tokAcc = new Token(TokenType::OAccess, $tokAuth->service, null, $tokAuth->session);
-		$tokRefresh = new Token(TokenType::ORefresh, $tokAuth->service, null, $tokAuth->session);
+		$tokAcc = new SessionToken(TokenType::OAccess, $tokAuth->service, null, $tokAuth->session);
+		$tokRefresh = new SessionToken(TokenType::ORefresh, $tokAuth->service, null, $tokAuth->session);
 
 		echo json_encode(array(
 			'access_token' => $tokAcc->export(),
@@ -157,12 +157,12 @@ if ($endpoint === '/authorize') {
 			json_error(400, 'invalid_client', 'invalid refresh_token parameter');
 		}
 
-		$tokRefresh = Token::accept(@$code, TokenType::ORefresh);
+		$tokRefresh = SessionToken::accept(@$code, TokenType::ORefresh);
 		if (!$tokRefresh || $tokRefresh->service !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
 		}
 
-		$tokAcc = new Token(TokenType::OAccess, $tokRefresh->service, null, $tokRefresh->session);
+		$tokAcc = new SessionToken(TokenType::OAccess, $tokRefresh->service, null, $tokRefresh->session);
 		echo json_encode(array(
 			'access_token' => $tokAcc->export(),
 			'token_type' => 'Bearer',
@@ -180,7 +180,7 @@ if ($endpoint === '/authorize') {
 		header('WWW-Authenticate: Bearer');
 		die();
 	}
-	$tok = Token::accept($rawtok, TokenType::OAccess);
+	$tok = SessionToken::accept($rawtok, TokenType::OAccess);
 	if (!$tok) {
 		http_response_code(401);
 		header('WWW-Authenticate: Bearer error="invalid_token"');

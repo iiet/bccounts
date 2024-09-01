@@ -2,7 +2,7 @@
 
 /**
  * Generates a random string that can be used as a secret token.
- * Used by class Token, bin/invite.php, public/recovery.php.
+ * Used by the SessionToken class, bin/invite.php, public/recovery.php.
  */
 function random_token(): string {
 	// Generate 32*8=256 bits of entropy and encode it with base64url.
@@ -26,8 +26,7 @@ enum TokenType: string
 /**
  * Represents an authenticated, valid "token" bound to an user session.
  * Used for OAuth2 tokens and session tokens. */
-// TODO rename to SessionToken to disambiguate from the other sorts of tokens?
-class Token
+class SessionToken
 {
 	public TokenType $type;
 	public string    $service;
@@ -81,7 +80,7 @@ class Token
 	 * Fetches a token from the database, and verifies that it's a valid
 	 * token of the expected type.
 	 */
-	public static function accept(string $repr, TokenType $type): ?Token {
+	public static function accept(string $repr, TokenType $type): ?SessionToken {
 		global $conf;
 
 		$res = Database::getInstance()->runStmt('
@@ -97,7 +96,7 @@ class Token
 		if ($tokExpires < $time || $sessExpires < $time) {
 			return null;
 		}
-		return new Token($type, $service, $tokExpires, $session);
+		return new SessionToken($type, $service, $tokExpires, $session);
 	}
 
 	/**
@@ -111,7 +110,7 @@ class Token
 	 * to properly do an atomic SELECT and DELETE I'm just not going to
 	 * guarantee atomicity. (I don't think using a transaction is enough?)
 	 */
-	 public static function acceptOnce(string $repr, TokenType $type): ?Token {
+	 public static function acceptOnce(string $repr, TokenType $type): ?SessionToken {
 	 	$tok = self::accept($repr, $type);
 	 	if ($tok !== null) {
 	 		// As always, the LIMIT 1 is there out of paranoia.
@@ -134,7 +133,7 @@ class Token
 
 abstract class MySession
 {
-	private static ?Token $token = null;
+	private static ?SessionToken $token = null;
 	private static bool $tokenCached = false;
 
 	public static function login(string $user, #[\SensitiveParameter] string $pass): bool {
@@ -165,7 +164,7 @@ abstract class MySession
 		if ($res == false) return false;
 
 		// Create and save the token.
-		$tok = new Token(TokenType::Session, '', $expires, $res[0]);
+		$tok = new SessionToken(TokenType::Session, '', $expires, $res[0]);
 		self::setToken($tok);
 		return true;
 	}
@@ -194,7 +193,7 @@ abstract class MySession
 		', [$session]);
 	}
 
-	private static function setToken(?Token $tok): void {
+	private static function setToken(?SessionToken $tok): void {
 		global $conf;
 		// To unset the cookie, we set its expiry time in the past.
 		setcookie($conf['cookie'], $tok ? $tok->export() : '', array(
@@ -211,13 +210,13 @@ abstract class MySession
 	 * Returns the session token of the currently logged in user or null
 	 * if no session is active.
 	 */
-	public static function getToken(): ?Token {
+	public static function getToken(): ?SessionToken {
 		global $conf;
 		if (!self::$tokenCached) {
 			self::$tokenCached = true;
 			$cookie = @$_COOKIE[$conf['cookie']];
 			if ($cookie) {
-				self::$token = Token::accept($cookie, TokenType::Session);
+				self::$token = SessionToken::accept($cookie, TokenType::Session);
 			}
 		}
 		return self::$token;
@@ -227,7 +226,7 @@ abstract class MySession
 	 * If the user isn't logged in, redirect them to the login page and
 	 * kill the script. Otherwise, return the token.
 	 */
-	public static function requireLogin(): Token {
+	public static function requireLogin(): SessionToken {
 		$token = self::getToken();
 		if ($token === null) {
 			$uri = '/login.php?redir=' . urlencode($_SERVER['REQUEST_URI']);
