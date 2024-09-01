@@ -16,3 +16,8 @@ Database::getInstance()->runStmt('
 	DELETE FROM sessions
 	WHERE expires < ?
 ', [time()]);
+
+Database::getInstance()->runStmt('
+	DELETE FROM recovery_tokens
+	WHERE expires < ?
+', [time()]);
