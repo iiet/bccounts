@@ -134,17 +134,11 @@ if ($endpoint === '/authorize') {
 			json_error(400, 'invalid_client', 'invalid code parameter');
 		}
 
-		$tokAuth = Token::accept($code, TokenType::OAuthorization);
+		// Don't allow reuse of authorization codes per the RFC.
+		$tokAuth = Token::acceptOnce($code, TokenType::OAuthorization);
 		if (!$tokAuth || $tokAuth->service !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
 		}
-
-		/* If an authorization code is used more than once, the authorization
-		 * server MUST deny the request and SHOULD revoke (when possible) all
-		 * tokens previously issued based on that authorization code.
-		 * The authorization code is bound to the client identifier and
-		 * redirection URI. */
-		// TODO expire authorization codes, preferably with a flag in ::accept
 
 		$tokAcc = new Token(TokenType::OAccess, $tokAuth->service, null, $tokAuth->session);
 		$tokRefresh = new Token(TokenType::ORefresh, $tokAuth->service, null, $tokAuth->session);

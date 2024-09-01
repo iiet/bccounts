@@ -93,6 +93,37 @@ class Token
 		}
 		return new Token($type, $service, $tokExpires, $session);
 	}
+
+	/**
+	 * Fetches a token from the database, and verifies that it's a valid token
+	 * of the expected type. It also removes it from the database to prevent
+	 * further use. NOT ATOMIC - it's still possible to use the token twice
+	 * if you get the timing just right.
+	 *
+	 * I only need this for the authorization keys. I don't think preventing
+	 * their reuse is super important, so instead of trying to figure out how
+	 * to properly do an atomic SELECT and DELETE I'm just not going to
+	 * guarantee atomicity. (I don't think using a transaction is enough?)
+	 */
+	 public static function acceptOnce(string $repr, TokenType $type): ?Token {
+	 	$tok = self::accept($repr, $type);
+	 	if ($tok !== null) {
+	 		// As always, the LIMIT 1 is there out of paranoia.
+	 		$stmt = Database::getInstance()->runStmt('
+	 			DELETE FROM tokens
+	 			WHERE token = ?
+	 			LIMIT 1
+	 		', [$repr]);
+	 		if ($stmt->rowCount() == 0) {
+	 			// Supposedly the SQLite wrapper is supposed to always return
+	 			// a rowCount of 0.  If OAuth stops working and you track it
+	 			// down to here - just remove this if condition.
+	 			mylog('Rejecting a token because we got raced... or because of a bug in PDO.');
+	 			return null;
+	 		}
+	 	}
+	 	return $tok;
+	 }
 }
 
 abstract class MySession
