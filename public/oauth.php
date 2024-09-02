@@ -13,7 +13,14 @@ require(__DIR__ . '/../src/common.php');
  */
 function redirect_back(string $uri, array $param): never {
 	$param['state'] = $_GET['state'];
-	$uri = $uri . '?' . http_build_query($param);
+	// Handle URIs that already contain query parameters.
+	// TODO: what about uri fragments?
+	if (str_contains($uri, '?')) {
+		$uri = $uri . '&';
+	} else {
+		$uri = $uri . '?';
+	}
+	$uri = $uri . http_build_query($param);
 	header('Location: ' . $uri);
 	die();
 }
@@ -70,6 +77,7 @@ if ($endpoint === '/authorize') {
 	}
 	assert($service !== null); // Get Psalm to shut up.
 
+	// TODO i need to handle arbitrary uris after all :(
 	$uri = @$_GET['redirect_uri'];
 	if ($uri !== $service['redirect_uri']) {
 		http_response_code(403);
@@ -173,13 +181,23 @@ if ($endpoint === '/authorize') {
 		json_error(400, 'unsupported_grant_type', $err);
 	}
 } else if ($endpoint === '/userinfo') {
+	header('Content-Type: application/json;charset=UTF-8');
+
 	// Bearer is described in RFC6750
-	[$method, $rawtok] = explode(' ', @$_SERVER['HTTP_AUTHORIZATION'], 2);
-	if ($method !== 'Bearer') {
+	$rawtok = null;
+	$http_auth = @$_SERVER['HTTP_AUTHORIZATION'];
+	if (is_string($http_auth) && str_starts_with($http_auth, 'Bearer ')) {
+		// RFC6750, 2.1. Authorization Request Header Field
+		[, $rawtok] = explode(' ', $http_auth, 2);
+	} else if (isset($_GET['access_token'])) {
+		// RFC6750, 2.3. URI Query Parameter
+		$rawtok = $_GET['access_token'];
+	} else {
 		http_response_code(401);
 		header('WWW-Authenticate: Bearer');
 		die();
 	}
+
 	$tok = SessionToken::accept($rawtok, TokenType::OAccess);
 	if (!$tok) {
 		http_response_code(401);
@@ -189,17 +207,27 @@ if ($endpoint === '/authorize') {
 	$data   = Database::getInstance()->getUser($tok->getUserID());
 	$groups = Database::getInstance()->getGroups($tok->getUserID());
 	assert($data !== null);
-	echo json_encode(array(
-		'user_id'    => $data['legacy_id'],
-		'login'      => $data['username'],
+	if (@$_GET['compat'] === 'public') {
+		// Output compatible with the old /public endpoint.
+		// I need it, because enroll-me crashes when it receives an
+		// unrecognized key in the response... Fucking brillant.
+		echo json_encode(array(
+			'user_id'    => $data['legacy_id'],
+			'login'      => $data['username'],
+		)) . "\n";
+	} else {
+		echo json_encode(array(
+			'user_id'    => $data['legacy_id'],
+			'login'      => $data['username'],
 
-		'full_name'  => $data['fullname'],
-		'first_name' => $data['first_name'],
-		'last_name'  => $data['last_name'],
-		'email'      => $data['email'],
-		'start_year' => $data['start_year'],
-		'groups'     => $groups,
-	)) . "\n";
+			'full_name'  => $data['fullname'],
+			'first_name' => $data['first_name'],
+			'last_name'  => $data['last_name'],
+			'email'      => $data['email'],
+			'start_year' => $data['start_year'],
+			'groups'     => $groups,
+		)) . "\n";
+	}
 } else {
 	http_response_code(404);
 	echo 'Bad oauth endpoint.';
