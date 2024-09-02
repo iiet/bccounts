@@ -94,7 +94,10 @@ if ($endpoint === '/authorize') {
 		));
 	}
 
-	$tok = new SessionToken(TokenType::OAuthorization, $serviceName, null, $sessToken->session);
+	$tok = new SessionToken(
+		TokenType::OAuthorization, $serviceName,
+		null, $sessToken->getSessionID()
+	);
 	redirect_back($uri, array(
 		'code' => $tok->export(),
 	));
@@ -144,12 +147,12 @@ if ($endpoint === '/authorize') {
 
 		// Don't allow reuse of authorization codes per the RFC.
 		$tokAuth = SessionToken::acceptOnce($code, TokenType::OAuthorization);
-		if (!$tokAuth || $tokAuth->service !== $serviceName) {
+		if (!$tokAuth || $tokAuth->getService() !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
 		}
 
-		$tokAcc = new SessionToken(TokenType::OAccess, $tokAuth->service, null, $tokAuth->session);
-		$tokRefresh = new SessionToken(TokenType::ORefresh, $tokAuth->service, null, $tokAuth->session);
+		$tokAcc     = $tokAuth->setTypeAndRefresh(TokenType::OAccess);
+		$tokRefresh = $tokAuth->setTypeAndRefresh(TokenType::ORefresh);
 
 		echo json_encode(array(
 			'access_token' => $tokAcc->export(),
@@ -158,19 +161,17 @@ if ($endpoint === '/authorize') {
 			'expires_in' => $conf['expires'][TokenType::OAccess->value],
 		)) . "\n";
 	} else if ($grant_type == 'refresh_token') {
-		// TODO checks if the current implementation checks the client secret on refresh
-
 		$code = @$_POST['refresh_token'];
 		if (!is_string($code)) {
 			json_error(400, 'invalid_client', 'invalid refresh_token parameter');
 		}
 
 		$tokRefresh = SessionToken::accept(@$code, TokenType::ORefresh);
-		if (!$tokRefresh || $tokRefresh->service !== $serviceName) {
+		if (!$tokRefresh || $tokRefresh->getService() !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
 		}
 
-		$tokAcc = new SessionToken(TokenType::OAccess, $tokRefresh->service, null, $tokRefresh->session);
+		$tokAcc = $tokRefresh->setTypeAndRefresh(TokenType::OAccess);
 		echo json_encode(array(
 			'access_token' => $tokAcc->export(),
 			'token_type' => 'Bearer',

@@ -66,7 +66,7 @@ while (([$session, $ctime, $ip] = $stmt->fetch())) { ?>
 			?>,
 			<?= hsc($ip) ?>
 			<?php
-			if ($sessToken->session != $session) {
+			if ($sessToken->getSessionID() != $session) {
 				// $session is currently only an integer, but the urlencode
 				// will make this safe even if the schema changes
 				$url = '/logout.php?session=' . urlencode($session);

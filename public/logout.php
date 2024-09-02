@@ -28,7 +28,7 @@ if ($sessToken) {
 		$error = 'Nie udało się wylogować podanej sesji.';
 	} else {
 		// Log out of the current session
-		MySession::logout($sessToken->session);
+		MySession::logout($sessToken->getSessionID());
 	}
 }
 

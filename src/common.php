@@ -28,13 +28,18 @@ enum TokenType: string
  * Used for OAuth2 tokens and session tokens. */
 class SessionToken
 {
-	public TokenType $type;
-	public string    $service;
-	public int       $expires;
-	public int       $session;
-	private ?int     $user = null;
+	protected TokenType $type;
+	protected string    $service;
+	protected int       $expires;
+	protected int       $session;
+	protected ?int      $user = null;
 
-	protected ?string $repr = null;
+	protected ?string   $repr = null;
+
+	public function getType(): TokenType { return $this->type; }
+	public function getService(): string { return $this->service; }
+	public function getExpiryTime(): int { return $this->expires; }
+	public function getSessionID():  int { return $this->session; }
 
 	public function __construct(TokenType $type, string $service, ?int $expires, int $session) {
 		global $conf;
@@ -80,6 +85,7 @@ class SessionToken
 	 * Fetches a token from the database, and verifies that it's a valid
 	 * token of the expected type.
 	 */
+	// TODO set repr
 	public static function accept(string $repr, TokenType $type): ?SessionToken {
 		global $conf;
 
@@ -129,6 +135,20 @@ class SessionToken
 	 	}
 	 	return $tok;
 	 }
+
+	 /**
+	  * Returns a copy of this token with a changed type and updated
+	  * expiry time. Meant to make it easier to extend the token with new
+	  * fields in the future.
+	  */
+	 public function setTypeAndRefresh(TokenType $type): SessionToken {
+	 	global $conf;
+	 	$tok = clone $this;
+	 	$tok->type = $type;
+	 	$tok->expires = time() + $conf['expires'][$type->value];
+	 	$tok->repr = null;
+	 	return $tok;
+	 }
 }
 
 abstract class MySession
@@ -171,7 +191,7 @@ abstract class MySession
 
 	public static function logout(int $session): void {
 		$token = self::getToken();
-		if ($token && $token->session == $session) {
+		if ($token && $token->getSessionID() == $session) {
 			self::setToken(null);
 		}
 
@@ -197,7 +217,7 @@ abstract class MySession
 		global $conf;
 		// To unset the cookie, we set its expiry time in the past.
 		setcookie($conf['cookie'], $tok ? $tok->export() : '', array(
-			'expires' => $tok ? $tok->expires : 1,
+			'expires' => $tok ? $tok->getExpiryTime() : 1,
 			'httponly' => true,
 			'path' => '/',
 			'secure' => true,
