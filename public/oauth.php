@@ -12,7 +12,7 @@ require(__DIR__ . '/../src/common.php');
  * parameters. Only relevant for /authorize.
  */
 function redirect_back(string $uri, array $param): never {
-	$param['state'] = $_GET['state'];
+	$param['state'] = @$_GET['state'];
 	// Handle URIs that already contain query parameters.
 	// TODO: what about uri fragments?
 	if (str_contains($uri, '?')) {
