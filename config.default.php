@@ -43,9 +43,11 @@ return array(
 		// The key is used to identify the service internally and it might be
 		// visible to the user.
 		'test' => array(
-			// I'm intentionally only allowing one redirect URI per service.
-			// See: comment near the authorization_code handler in oauth.php
-			'redirect_uri' => 'https://oauthdebugger.com/debug',
+			// A regex specifying the allowed redirect URIs.
+			// Note that you can use a custom delimiter:
+			// https://www.php.net/manual/en/regexp.reference.delimiters.php
+			// Don't forget the ^ and be careful about dots.
+			'redirect_uri' => '~^https://oauthdebugger\.com/debug~',
 			'client_id' => 'testasdf',
 			'client_secret' => '{clientSecret}',
 		),

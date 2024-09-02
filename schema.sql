@@ -1,3 +1,7 @@
+-- DON'T USE THIS TO INITIALIZE THE DATABASE!
+-- Use bin/migrate.php instead.
+-- This is just a description of what the final schema looks like.
+
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 
@@ -101,7 +105,7 @@ ON "sessions"("user");
 
 /* Stores OAuth tokens and a session token (stored in a cookie).
  * If you're going to add support for apps not managed by us, add a scopes
- * column. A redirect_uri column could be helpful too. */
+ * column. */
 CREATE TABLE IF NOT EXISTS "tokens" (
 	"token" TEXT NOT NULL UNIQUE,
 	"session" INTEGER NOT NULL,
@@ -109,6 +113,8 @@ CREATE TABLE IF NOT EXISTS "tokens" (
 	"expires" INTEGER,
 	-- References the keys in the services array in the config.
 	"service" TEXT NOT NULL,
+	-- The redirect_uri used. Only set for authorization tokens.
+	"redirect_uri" TEXT,
 	PRIMARY KEY("token"),
 	FOREIGN KEY ("session") REFERENCES "sessions"("id")
 	ON UPDATE RESTRICT ON DELETE CASCADE

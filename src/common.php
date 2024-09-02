@@ -32,14 +32,27 @@ class SessionToken
 	protected string    $service;
 	protected int       $expires;
 	protected int       $session;
+
+	/** Not copied when deriving new tokens - only used for authorization
+	 * tokens. */
+	protected ?string   $redirect_uri = null;
+
+	/** Cache for getUserID(). */
 	protected ?int      $user = null;
 
+	/** Only set for tokens that are (were) already in the database. */
 	protected ?string   $repr = null;
 
 	public function getType(): TokenType { return $this->type; }
 	public function getService(): string { return $this->service; }
 	public function getExpiryTime(): int { return $this->expires; }
 	public function getSessionID():  int { return $this->session; }
+
+	public function getRedirectURI(): ?string { return $this->redirect_uri; }
+	public function setRedirectURI(?string $uri): void {
+		$this->redirect_uri = $uri;
+		$this->repr = null;
+	}
 
 	public function __construct(TokenType $type, string $service, ?int $expires, int $session) {
 		global $conf;
@@ -59,9 +72,13 @@ class SessionToken
 		if ($this->repr === null) {
 			$this->repr = random_token();
 			Database::getInstance()->runStmt('
-				INSERT INTO tokens (token, session, type, expires, service)
-				VALUES (?, ?, ?, ?, ?)
-			', [$this->repr, $this->session, $this->type->value, $this->expires, $this->service]);
+				INSERT INTO tokens
+				(token, session, type, expires, service, redirect_uri)
+				VALUES (?, ?, ?, ?, ?, ?)
+			', [
+				$this->repr, $this->session, $this->type->value,
+				$this->expires, $this->service, $this->redirect_uri,
+			]);
 		}
 		return $this->repr;
 	}
@@ -85,24 +102,27 @@ class SessionToken
 	 * Fetches a token from the database, and verifies that it's a valid
 	 * token of the expected type.
 	 */
-	// TODO set repr
 	public static function accept(string $repr, TokenType $type): ?SessionToken {
 		global $conf;
 
 		$res = Database::getInstance()->runStmt('
-			SELECT tokens.session, tokens.expires, sessions.expires, tokens.service
+			SELECT tokens.session, tokens.expires, sessions.expires,
+			       tokens.service, tokens.redirect_uri
 			FROM tokens
 			JOIN sessions ON tokens.session = sessions.id
 			WHERE token = ? AND type = ?
 		', [$repr, $type->value])->fetch();
 		if ($res === false) return null;
-		[$session, $tokExpires, $sessExpires, $service] = $res;
+		[$session, $tokExpires, $sessExpires, $service, $uri] = $res;
 
 		$time = time();
 		if ($tokExpires < $time || $sessExpires < $time) {
 			return null;
 		}
-		return new SessionToken($type, $service, $tokExpires, $session);
+		$tok = new SessionToken($type, $service, $tokExpires, $session);
+		$tok->redirect_uri = $uri;
+		$tok->repr = $repr;
+		return $tok;
 	}
 
 	/**
@@ -126,9 +146,9 @@ class SessionToken
 	 			LIMIT 1
 	 		', [$repr]);
 	 		if ($stmt->rowCount() == 0) {
-	 			// Supposedly the SQLite wrapper is supposed to always return
-	 			// a rowCount of 0.  If OAuth stops working and you track it
-	 			// down to here - just remove this if condition.
+	 			// Supposedly the SQLite wrapper is always returns a rowCount
+	 			// of 0.  If OAuth stops working and you track it down to here,
+	 			// just remove this if condition.
 	 			mylog('Rejecting a token because we got raced... or because of a bug in PDO.');
 	 			return null;
 	 		}
@@ -141,6 +161,8 @@ class SessionToken
 	  * expiry time. Meant to make it easier to extend the token with new
 	  * fields in the future.
 	  */
+	 // TODO rename - this name is kinda misleading, as it returns a copy
+	 //      instead.
 	 public function setTypeAndRefresh(TokenType $type): SessionToken {
 	 	global $conf;
 	 	$tok = clone $this;
@@ -273,6 +295,11 @@ class Database
 		// Throw an exception on error.
 		// This is already the default (since 8.0.0), but I want to be explicit.
 		$this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+		// Ensure the database version isn't mismatched.
+		$version = $this->dbh->query('PRAGMA user_version')->fetch()['user_version'];
+		if ($version !== 2) {
+			throw new Exception('Incorrect user_version. Run bin/migrate.php.');
+		}
 	}
 
 	public static function getInstance(): Database {

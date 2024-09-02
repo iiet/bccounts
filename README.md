@@ -36,7 +36,7 @@ Jest to celowo "prymitywny" kod.
 [^bootstrap]: Poza CSS Bootstrapa.  Jest to jeden plik którego nie muszę nigdy aktualizować, a nawet gdyby przestał jakimś cudem działać, to zepsuje tylko estetykę strony - a nie jej działanie.  Jego zalety przewyższają wady.
 
 ## jak odpalić
-1. Tworzymy bazę danych - `sqlite db.sqlite '.read schema.sql'`.
+1. Tworzymy bazę danych za pomocą `php bin/migrate.php sqlite:/path/to/database.sql`.
 2. Dostosowujemy config do swoich potrzeb.
 3. `php -S localhost:8080 -t public` (oczywiście tylko do testów - config produkcyjny ~~jest~~ będzie na [nusible](https://git.iiet.pl/iiet/nusible/tree/main))
 

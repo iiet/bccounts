@@ -40,7 +40,7 @@ function json_error(int $code, string $error, ?string $desc): never {
 	die();
 }
 
-/** @return ?array{string, array{redirect_uri: string,
+/** @return ?array{string, array{redirect_uri: non-empty-string,
   *                              client_id: string,
   *                              client_secret: string}} */
 function find_service(string $client_id): ?array {
@@ -77,13 +77,11 @@ if ($endpoint === '/authorize') {
 	}
 	assert($service !== null); // Get Psalm to shut up.
 
-	// TODO i need to handle arbitrary uris after all :(
 	$uri = @$_GET['redirect_uri'];
-	if ($uri !== $service['redirect_uri']) {
+	if (!is_string($uri) || preg_match($service['redirect_uri'], $uri) !== 1) {
 		http_response_code(403);
 		die('Bad redirect_uri.');
 	}
-	$uri = $service['redirect_uri']; // This fixes 3 "errors" in Psalm. Yeah.
 
 	if (@$_GET['response_type'] != 'code') {
 		// RFC6749, 4.1.2.1. Error Response
@@ -94,10 +92,12 @@ if ($endpoint === '/authorize') {
 		));
 	}
 
+	// TODO ->setService
 	$tok = new SessionToken(
 		TokenType::OAuthorization, $serviceName,
 		null, $sessToken->getSessionID()
 	);
+	$tok->setRedirectURI($uri);
 	redirect_back($uri, array(
 		'code' => $tok->export(),
 	));
@@ -149,6 +149,15 @@ if ($endpoint === '/authorize') {
 		$tokAuth = SessionToken::acceptOnce($code, TokenType::OAuthorization);
 		if (!$tokAuth || $tokAuth->getService() !== $serviceName) {
 			json_error(400, 'invalid_grant', null);
+		}
+
+		// If we were provided a redirect URI, verify that it looks correct.
+		if (isset($_POST['redirect_uri'])) {
+			$uri = $_POST['redirect_uri'];
+			// The is_string check is redundant, I just want to be verbose.
+			if (!is_string($uri) || $uri !== $tokAuth->getRedirectURI()) {
+				json_error(400, 'invalid_grant', 'mismatched redirect_uri');
+			}
 		}
 
 		$tokAcc     = $tokAuth->setTypeAndRefresh(TokenType::OAccess);
