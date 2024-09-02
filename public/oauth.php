@@ -77,6 +77,18 @@ if ($endpoint === '/authorize') {
 	}
 	assert($service !== null); // Get Psalm to shut up.
 
+	/**
+	 * We're checking if the URI matches the configured.
+	 * All regexes *should* begin with a ^ (there's a note about it),
+	 * so an open redirect shouldn't be possible if the server isn't
+	 * misconfigured.
+	 *
+	 * Some regexes might not end with a $, so the redirect_uri could include
+	 * newlines in an attempt to inject headers, but header() checks for that.
+	 * This is undocumented behaviour (what the FUCK, php?), but you can verify
+	 * that the check is there in sapi_header_op.
+	 * @psalm-taint-escape header
+	 */
 	$uri = @$_GET['redirect_uri'];
 	if (!is_string($uri) || preg_match($service['redirect_uri'], $uri) !== 1) {
 		http_response_code(403);

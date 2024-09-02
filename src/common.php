@@ -121,6 +121,9 @@ class SessionToken
 		}
 		$tok = new SessionToken($type, $service, $tokExpires, $session);
 		$tok->redirect_uri = $uri;
+		/** @psalm-taint-escape html
+		 *  @psalm-taint-escape cookie
+		 *  @psalm-taint-escape has_quotes */
 		$tok->repr = $repr;
 		return $tok;
 	}
