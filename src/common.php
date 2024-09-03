@@ -300,7 +300,7 @@ class Database
 		$this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 		// Ensure the database version isn't mismatched.
 		$version = $this->dbh->query('PRAGMA user_version')->fetch()['user_version'];
-		if ($version !== 2) {
+		if ($version !== 3) {
 			throw new Exception('Incorrect user_version. Run bin/migrate.php.');
 		}
 	}

@@ -2,7 +2,7 @@
 /** Updates the DB schema to the newest version. */
 
 function migrate(PDO $dbh, int $from, int $to, string $desc, string $query): void {
-	if ($dbh->query('PRAGMA user_version')->fetch()['user_version'] != $from) {
+	if ($dbh->query('PRAGMA user_version')->fetch()['user_version'] !== $from) {
 		echo "Skipping $from -> $to: $desc\n";
 		return;
 	}
@@ -23,11 +23,20 @@ $dbh = new PDO($argv[1], @$argv[2], @$argv[3]);
 $dbh->exec('PRAGMA foreign_keys = ON;');
 $dbh->beginTransaction();
 
-migrate($dbh, 0, 1, 'Initial schema', '
+// I initially didn't make the username and email case insensitive.
+//
+// SQLite doesn't provide a direct way to change the collation of a column.
+// People online suggest creating a new table, moving the data to it
+// (INSERT INTO table2 SELECT * from table1), and removing the old one.
+// I'm pretty sure this would break foreign key relations, though. There are
+// some hacky ways to work around it, but creating an entirely new database
+// and moving the data into it is the simplest approach.
+// (I'm expecting the admin to manually move the data over.)
+migrate($dbh, 0, 3, 'Initial schema (after COLLATE changes)', '
 	CREATE TABLE IF NOT EXISTS "users" (
 		"id" INTEGER PRIMARY KEY AUTOINCREMENT,
-		"username" TEXT UNIQUE,
-		"email" TEXT UNIQUE,
+		"username" TEXT UNIQUE COLLATE NOCASE,
+		"email" TEXT UNIQUE COLLATE NOCASE,
 		"password" TEXT,
 		"fullname" TEXT,
 		"start_year" INTEGER,
@@ -66,10 +75,8 @@ migrate($dbh, 0, 1, 'Initial schema', '
 	CREATE TABLE IF NOT EXISTS "sessions" (
 		"id" INTEGER PRIMARY KEY AUTOINCREMENT,
 		"user" INTEGER NOT NULL,
-
 		"ctime" INTEGER NOT NULL,
 		"expires" INTEGER NOT NULL,
-
 		"ip" TEXT,
 		FOREIGN KEY ("user") REFERENCES "users"("id")
 		ON UPDATE RESTRICT ON DELETE RESTRICT
@@ -83,6 +90,7 @@ migrate($dbh, 0, 1, 'Initial schema', '
 		"type" TEXT NOT NULL,
 		"expires" INTEGER,
 		"service" TEXT NOT NULL,
+		"redirect_uri" TEXT,
 		PRIMARY KEY("token"),
 		FOREIGN KEY ("session") REFERENCES "sessions"("id")
 		ON UPDATE RESTRICT ON DELETE CASCADE
@@ -100,10 +108,11 @@ migrate($dbh, 0, 1, 'Initial schema', '
 	);
 ');
 
-// redirect_uri is needed to support more than a single redirect_uri per
-// service without violating the spec
-migrate($dbh, 1, 2, 'Add a redirect_uri column to tokens', '
-	ALTER TABLE "tokens" ADD COLUMN "redirect_uri" TEXT;
-');
+$uv = $dbh->query('PRAGMA user_version')->fetch()['user_version'];
+$expect = 3;
+if ($uv !== $expect) {
+	$dbh->rollback();
+	die("Unexpected user_version - expected $expect, got $uv. Quitting.\n");
+}
 
 $dbh->commit();

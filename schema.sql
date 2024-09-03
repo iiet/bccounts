@@ -9,13 +9,13 @@ CREATE TABLE IF NOT EXISTS "users" (
 	-- If NULL, the user wasn't yet onboarded - deny login!
 	-- Note that it's used by some services as an unique identifier with the
 	-- assumption it won't ever change.
-	"username" TEXT UNIQUE,
+	"username" TEXT UNIQUE COLLATE NOCASE,
 
 	-- I wanted to create a separate "emails" table (it's the only sane way
 	-- to allow changing emails, and allowing additional emails would be useful
 	-- so as not to depend on the uni emails too much), but some services use
 	-- the email as an identifier, so I need a single "primary" email.
-	"email" TEXT UNIQUE,
+	"email" TEXT UNIQUE COLLATE NOCASE,
 
 	-- Stored in the password_hash / crypt(3) format.
 	"password" TEXT,
