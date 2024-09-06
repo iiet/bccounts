@@ -38,7 +38,7 @@ Jest to celowo "prymitywny" kod.
 ## jak odpalić
 1. Tworzymy bazę danych za pomocą `php bin/migrate.php sqlite:/path/to/database.sql`.
    Prawdopodobnie chcesz też ustawić `PRAGMA journal_mode = WAL`.
-2. Dostosowujemy config do swoich potrzeb.
+2. Tworzymy `config/local.php` i dostosowujemy do swoich potrzeb.
 3. `php -S localhost:8080 -t public` (oczywiście tylko do testów - config produkcyjny ~~jest~~ będzie na [nusible](https://git.iiet.pl/iiet/nusible/tree/main))
 
 ### testowanie OAuth

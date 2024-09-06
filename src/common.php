@@ -406,5 +406,6 @@ function hsc(mixed $v): string {
 	return htmlspecialchars(strval($v));
 }
 
-$conf = require(__DIR__ . '/../config.php');
+require(__DIR__ . '/../config/default.php');
+require(__DIR__ . '/../config/local.php'); // You need to create this yourself.
 require(__DIR__ . '/template.php');
