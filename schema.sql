@@ -1,6 +1,6 @@
--- DON'T USE THIS TO INITIALIZE THE DATABASE!
--- Use bin/migrate.php instead.
+-- DON'T USE THIS TO INITIALIZE THE DATABASE! Use bin/migrate.php instead.
 -- This is just a description of what the final schema looks like.
+-- (Although it is used for unit tests, even if it probably shouldn't...)
 
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -291,13 +291,16 @@ class Database
 	protected ?PDOStatement $group_stmt = null;
 
 	protected function __construct() {
-		global $conf;
+		global $conf, $IN_TEST;
 		$this->dbh = new PDO($conf['pdo_dsn'], $conf['pdo_user'], $conf['pdo_pass']);
 		// SQLite doesn't enforce foreign key relations by default.
 		$this->dbh->exec('PRAGMA foreign_keys = ON;');
 		// Throw an exception on error.
 		// This is already the default (since 8.0.0), but I want to be explicit.
 		$this->dbh->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+		if (isset($IN_TEST)) return; // tests/bootstrap.php will initialize the db.
+
 		// Ensure the database version isn't mismatched.
 		$version = $this->dbh->query('PRAGMA user_version')->fetch()['user_version'];
 		if ($version !== 3) {
@@ -407,5 +410,10 @@ function hsc(mixed $v): string {
 }
 
 require(__DIR__ . '/../config/default.php');
-require(__DIR__ . '/../config/local.php'); // You need to create this yourself.
+if (!isset($IN_TEST)) {
+	require(__DIR__ . '/../config/local.php'); // You need to create this yourself.
+} else {
+	require(__DIR__ . '/../config/test.php');
+}
+
 require(__DIR__ . '/template.php');

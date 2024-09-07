@@ -1,5 +1,6 @@
 *.csv
 *.db
 *.phar
+*.phar.asc
 
 config/local.php
