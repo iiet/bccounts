@@ -3,17 +3,7 @@ require(__DIR__ . '/../src/common.php');
 
 $error = null;
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-	$user = @$_POST['user'];
-	$pass = @$_POST['pass'];
-	if (!is_string($user) || !is_string($pass)) {
-		$error = 'Niepoprawnie wypełniony formularz.';
-	} else if (!MySession::login($user, $pass)) {
-		$error = 'Niepoprawna nazwa użytkownika lub hasło.';
-	}
-}
-
-if (MySession::getToken() !== null) {
+function redirectAway(): never {
 	// Did MySession::requireLogin bring us here?
 	$uri = @$_GET['redir'];
 	if (is_string($uri) && str_starts_with($uri, '/')) {
@@ -28,6 +18,22 @@ if (MySession::getToken() !== null) {
 		header('Location: /index.php');
 	}
 	die();
+}
+
+if (MySession::getToken() !== null) {
+	redirectAway();
+}
+
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+	$user = @$_POST['user'];
+	$pass = @$_POST['pass'];
+	if (!is_string($user) || !is_string($pass)) {
+		$error = 'Niepoprawnie wypełniony formularz.';
+	} else if (!MySession::login($user, $pass)) {
+		$error = 'Niepoprawna nazwa użytkownika lub hasło.';
+	} else {
+		redirectAway();
+	}
 }
 
 html_header('iiet.pl');

@@ -60,8 +60,7 @@ header('Pragma: no-cache');
 
 $endpoint = $_SERVER['PATH_INFO'];
 if ($endpoint === '/authorize') {
-	MySession::requireLogin();
-	$sessToken = MySession::getToken();
+	$sessToken = MySession::requireLogin();
 	$client_id = @$_GET['client_id'];
 	assert($sessToken !== null);
 

@@ -7,29 +7,27 @@ require(__DIR__ . '/../src/common.php');
 
 $error = null;
 
-$sessToken = MySession::getToken();
-if ($sessToken) {
-	if (isset($_GET['session'])) {
-		// Log out a different session of the same user
-		$other = $_GET['session'];
+$sessToken = MySession::requireLogin();
+if (isset($_GET['session'])) {
+	// Log out a different session of the same user
+	$other = $_GET['session'];
 
-		if (is_numeric($other)) {
-			$res = Database::getInstance()->runStmt('
-				SELECT user
-				FROM sessions
-				WHERE id = ?
-			', [$other])->fetch();
-			if ($res && $res['user'] == $sessToken->getUserID()) {
-				MySession::logout((int)$other);
-				header('Location: /');
-				die();
-			}
+	if (is_numeric($other)) {
+		$res = Database::getInstance()->runStmt('
+			SELECT user
+			FROM sessions
+			WHERE id = ?
+		', [$other])->fetch();
+		if ($res && $res['user'] == $sessToken->getUserID()) {
+			MySession::logout((int)$other);
+			header('Location: /');
+			die();
 		}
-		$error = 'Nie udało się wylogować podanej sesji.';
-	} else {
-		// Log out of the current session
-		MySession::logout($sessToken->getSessionID());
 	}
+	$error = 'Nie udało się wylogować podanej sesji.';
+} else {
+	// Log out of the current session
+	MySession::logout($sessToken->getSessionID());
 }
 
 html_header('iiet.pl');
