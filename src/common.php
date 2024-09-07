@@ -339,6 +339,9 @@ class Database
 		if ($res['fullname'] !== null) {
 			[$res['first_name'], $res['last_name']] = explode(' ', $res['fullname']);
 		}
+		// This seems to fix some issues with the OAuth plugin on the forum.
+		if (!isset($res['first_name'])) $res['first_name'] = '';
+		if (!isset($res['last_name']))  $res['last_name'] = '';
 		return $res;
 	}
 
