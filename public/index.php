@@ -10,15 +10,19 @@ html_header('iiet.pl');
 ?>
 <div class="w-100" style="max-width: 400px;">
 <div class="card w-100 my-4">
-	<div class="card-header">Nasze serwisy:</div>
+	<div class="card-header">Nasze serwisy</div>
 	<ul class="list-group list-group-flush">
 <?php foreach ($conf['frontservices'] as $k => $v) { ?>
 		<li class="list-group-item"><a href="<?=hsc($v)?>"><?=hsc($k)?></a></li>
 <?php } ?>
 	</ul>
 </div>
-<div class="card w-100 my-4">
-	<div class="card-header">Twoje dane:</div>
+<!-- I'm using <details> to hide sensitive data by default.
+     The "standard" way to do this in Bootstrap would be an Accordion,
+     but that requires Javascript, which is stupid.
+     This is a hack, but it works surprisingly well. -->
+<details class="card w-100 my-4">
+	<summary class="card-header user-select-none">Twoje dane</summary>
 	<table class="table">
 <?php
 $data = array(
@@ -44,11 +48,11 @@ foreach ($data as $k => $name) {
 		</tr>
 	</table>
 	<div class="card-body pt-0">
-		<a class="btn btn-outline-primary float-end" href="/chpass.php">Zmień hasło</a>
+		<a class="btn btn-outline-primary" href="/chpass.php">Zmień hasło</a>
 	</div>
-</div>
-<div class="card w-100 my-4">
-	<div class="card-header">Aktywne sesje:</div>
+</details>
+<details class="card w-100 my-4">
+	<summary class="card-header user-select-none">Aktywne sesje</summary>
 	<ul class="list-group list-group-flush">
 <?php
 $stmt = Database::getInstance()->runStmt('
@@ -76,6 +80,6 @@ while (([$session, $ctime, $ip] = $stmt->fetch())) { ?>
 		</li>
 <?php } ?>
 	</ul>
-</div>
+</details>
 </div>
 <?php html_footer();
