@@ -246,6 +246,7 @@ if ($endpoint === '/authorize') {
 			'last_name'  => $data['last_name'],
 			'email'      => $data['email'],
 			'start_year' => $data['start_year'],
+			'transcript_number' => $data['transcript_id'],
 			'groups'     => $groups,
 		)) . "\n";
 	}
