@@ -68,6 +68,12 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 html_header('iiet.pl');
 ?>
 <form class="w-100" style="max-width: 400px;" method="post">
+	<div class="alert alert-light">
+	Żeby założyć u nas konto, musisz najpierw
+	<a href="https://panel.agh.edu.pl/newuser/newuser.php">
+	założyć uczelnianego emaila</a>.
+	Wyślemy ci tam linka do dokończenia rejestracji.
+	</div>
 	<?php if ($error !== null) { ?>
 		<div class="alert alert-danger"> <?= hsc($error) ?> </div>
 	<?php } ?>
@@ -76,11 +82,19 @@ html_header('iiet.pl');
 	<?php } ?>
 	<div class="my-3">
 		<label for="token">Token rejestracji:</label>
-		<input type="text" name="token" class="form-control" required value="<?=hsc(@$_GET['token'])?>"/>
+		<input
+			type="text" name="token" class="form-control" required
+			<?php if (isset($_GET['token'])) { ?>
+			value="<?=hsc($_GET['token'])?>" readonly
+			<?php } ?>
+		/>
 	</div>
 	<div class="my-3">
 		<label for="transcript">Numer indeksu:</label>
-		<input type="number" name="transcript" class="form-control" min="100000" placeholder="123456" required />
+		<input
+			type="number" name="transcript" class="form-control"
+			min="100000" placeholder="123456" required autofocus
+		/>
 	</div>
 	<button class="btn btn-primary">Kontynuuj</button>
 </form>
