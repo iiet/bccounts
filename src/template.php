@@ -30,11 +30,15 @@ if ($sessToken) {
 function html_footer(): void {
 	global $conf;
 	?>
-	<footer class="py-3 mt-4 border-top mt-auto w-100 text-body-secondary">
-		bccounts, stworzone przez BIT.
-		<a href="<?= hsc($conf['sourcelink']) ?>">kod</a>,
-		<a href="/privacy.php">polityka prywatności</a>,
-		<a href="<?= hsc($conf['contactlink']) ?>">kontakt</a>
+	<footer class="py-3 mt-4 border-top mt-auto w-100 d-flex text-body-secondary">
+		<div class="flex-grow-1">
+			bccounts, stworzone przez BIT. 2024.
+		</div>
+		<div>
+			<a href="<?= hsc($conf['sourcelink']) ?>">kod</a>,
+			<a href="/privacy.php">polityka prywatności</a>,
+			<a href="<?= hsc($conf['contactlink']) ?>">kontakt</a>
+		</div>
 	</footer>
 </div>
 </body>
