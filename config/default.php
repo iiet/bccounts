@@ -102,3 +102,8 @@ $conf['sourcelink'] = 'https://git.iiet.pl/iiet/bccounts';
 /* Used in the footer and register form. */
 $conf['contactlink'] = 'https://example.com';
 $conf['contactname'] = 'Example Organization';
+
+/* User by appapi.php. */
+$conf['appapi_users'] = [
+	// 'aid' => 'auth_token',
+];

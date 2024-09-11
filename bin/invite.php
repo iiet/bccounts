@@ -103,7 +103,7 @@ if ($db->beginTransaction() !== true) {
 }
 
 // Generate a 20char long base64url encoded string.
-function random_legacy_id() {
+function random_legacy_id(): string {
 	$s = base64_encode(random_bytes(15));
 	assert(strlen($s) == 20);
 	return str_replace(['+', '/', '='], ['-', '_', ''], $s);
