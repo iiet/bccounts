@@ -46,8 +46,11 @@ CREATE TABLE IF NOT EXISTS "users" (
 	"regtoken" TEXT UNIQUE,
 
 	-- The previous implementation assigned an unique random 20 character
-	-- string to each user. I'm keeping this in for now for compatibility,
-	-- but I'd love to get rid of this field in the future.
+	-- string to each user. ~~I'm keeping this in for now for compatibility,
+	-- but I'd love to get rid of this field in the future.~~
+	-- Nevermind, having a separate user visible id field does seem potentially
+	-- kinda useful?
+	-- If NULL, it's generated dynamically based on the id. See getUser().
 	"legacy_id" TEXT UNIQUE
 );
 

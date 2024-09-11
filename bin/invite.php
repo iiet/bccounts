@@ -102,7 +102,15 @@ if ($db->beginTransaction() !== true) {
 	die("Couldn't start a transaction?\n");
 }
 
+// Generate a 20char long base64url encoded string.
+function random_legacy_id() {
+	$s = base64_encode(random_bytes(15));
+	assert(strlen($s) == 20);
+	return str_replace(['+', '/', '='], ['-', '_', ''], $s);
+}
+
 $adds  = 0;
+$warns = 0;
 $skips = 0;
 foreach ($data as $row) {
 	[$fullname, $transcript] = $row;
@@ -111,13 +119,13 @@ foreach ($data as $row) {
 	// but the email is - so I'm using it to ensure no duplicates are entered.
 	$email = $transcript . $conf['studentsuffix'];
 
-	$token = random_token();
+	$regtoken = random_token();
 	$stmt = Database::getInstance()->runStmt('
 		INSERT OR IGNORE INTO users
 		(email, fullname, start_year, transcript_id, regtoken)
 		VALUES (?, ?, ?, ?, ?)
 		RETURNING id
-	', [$email, $fullname, $start_year, $transcript, $token]);
+	', [$email, $fullname, $start_year, $transcript, $regtoken]);
 	// Needs to be a fetchAll, otherwise the commit at the end fails.
 	$res = $stmt->fetchAll();
 	if (count($res) === 0) { // Didn't insert:
@@ -138,11 +146,30 @@ foreach ($data as $row) {
 		', [$uid, $g]);
 	}
 
-	echo "ADDED $email $token\n";
+	// Let's also try to assign them a new legacy_id.
+	// This can fail because of the UNIQUE constraint - I'm going to assume
+	// the chances are low enough that I can deal with it, especially since
+	// I have the fallback for missing legacy_ids.
+	$stmt = Database::getInstance()->runStmt('
+		UPDATE OR IGNORE users
+		SET legacy_id = ?
+		WHERE id = ? AND legacy_id IS NULL
+		RETURNING legacy_id
+	', [random_legacy_id(), $uid]);
+	$res = $stmt->fetchAll(); // see comment above
+
+	$legacy_id = "\033[31mNO LEGACY ID\033[0m";
+	if (count($res) != 0) {
+		$legacy_id = $res[0]['legacy_id'];
+	} else {
+		$warns += 1;
+	}
+
+	echo "ADDED $email $legacy_id\n";
 	$adds += 1;
 }
 
-echo "Added $adds, skipped $skips.\n";
+echo "Added $adds ($warns warnings), skipped $skips.\n";
 
 echo "Last chance - type in 'commit' to commit the changes to the database.\n";
 $times = 0;
