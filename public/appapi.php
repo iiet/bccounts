@@ -59,7 +59,7 @@ $res = [];
 // this endpoint.
 $usersStmt = Database::getInstance()->runStmt('
 	SELECT id FROM users
-	WHERE start_year >= 2025 AND username IS NOT NULL
+	WHERE start_year >= 2024 AND username IS NOT NULL
 ', []);
 while (([$uid] = $usersStmt->fetch())) {
 	$data = Database::getInstance()->getUser($uid);
@@ -68,7 +68,7 @@ while (([$uid] = $usersStmt->fetch())) {
 		'user_id'    => $data['legacy_id'],
 		'login'      => $data['username'],
 		'name'       => $data['fullname'],
-		'group_ids'  => [], // shrug emoji
+		'group_ids'  => [5 /* students */], // shrug emoji
 		'active'     => true,
 		'start_year' => $data['start_year'],
 		'email'      => $data['email'],

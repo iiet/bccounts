@@ -9,7 +9,7 @@ function send_token(string $transcript): void {
 	$res = Database::getInstance()->runStmt('
 		SELECT id, email, regtoken, last_email
 		FROM users
-		WHERE transcript_id = ?
+		WHERE transcript_id = ? AND regtoken IS NOT NULL
 	', [$transcript])->fetch();
 	if ($res === false) {
 		// This allows enumerating the transcript numbers of unregistered people

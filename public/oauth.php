@@ -126,19 +126,23 @@ if ($endpoint === '/authorize') {
 		$client_id     = $_POST['client_id'];
 		$client_secret = $_POST['client_secret'];
 	} else {
+		mylog('no authorization on /token');
 		json_error(400, 'invalid_client', 'no authorization method used');
 	}
 
 	if (!is_string($client_id) || !is_string($client_secret)) {
+		mylog('bad authorization on /token');
 		json_error(400, 'invalid_client', 'bad authorization params');
 	}
 
 	[$serviceName, $service] = find_service($client_id);
 	if ($serviceName === null) {
+		mylog('bad client_id authorization on /token');
 		json_error(400, 'invalid_client', 'client_id not recognized');
 	}
 	assert($service !== null);
 	if (!hash_equals($service['client_secret'], $client_secret)) {
+		mylog('bad client_secret authorization on /token');
 		json_error(400, 'invalid_client', 'bad client_secret');
 	}
 
@@ -183,11 +187,13 @@ if ($endpoint === '/authorize') {
 	} else if ($grant_type == 'refresh_token') {
 		$code = @$_POST['refresh_token'];
 		if (!is_string($code)) {
+			mylog('bad refresh_token');
 			json_error(400, 'invalid_client', 'invalid refresh_token parameter');
 		}
 
 		$tokRefresh = SessionToken::accept(@$code, TokenType::ORefresh);
 		if (!$tokRefresh || $tokRefresh->getService() !== $serviceName) {
+			mylog('invalid refresh_token');
 			json_error(400, 'invalid_grant', null);
 		}
 

@@ -155,7 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	</div>
 	<div class="my-3 alert alert-warning">
 		Kontynuując wyrażasz zgodę na przetwarzanie swoich danych osobowych przez
-		<a href="<? =hsc($conf['contactlink']) ?>">
+		<a href="<?= hsc($conf['contactlink']) ?>">
 		<?= hsc($conf['contactname']) ?></a>.
 		Detale opisane są w <a href="/privacy.php">polityce prywatności</a>.
 	</div>

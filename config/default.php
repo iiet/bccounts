@@ -103,7 +103,7 @@ $conf['sourcelink'] = 'https://git.iiet.pl/iiet/bccounts';
 $conf['contactlink'] = 'https://example.com';
 $conf['contactname'] = 'Example Organization';
 
-/* User by appapi.php. */
+/* Used by appapi.php. */
 $conf['appapi_users'] = [
 	// 'aid' => 'auth_token',
 ];
