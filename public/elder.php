@@ -9,6 +9,20 @@ $sessToken = MySession::requireLogin();
 
 html_header('iiet.pl');
 
+// TODO don't show this to people who aren't logged in
+?>
+<div class="d-md-none">
+<p>
+Jesteś na zbyt małym ekranie by cała tabelka się zmieściła,
+więc ukryliśmy wewnętrzny ID.
+Jeśli jesteś na telefonie,
+możesz włączyć "Desktop mode"... czy jakkolwiek to się nazywa po polsku.
+Jeśli jesteś na komputerze,
+kup większy monitor.
+</p>
+</div>
+<?php
+
 $elderStmt = Database::getInstance()->runStmt('
 	SELECT "group"
 	FROM usergroups
@@ -20,10 +34,10 @@ while (([$group] = $elderStmt->fetch())) {
 	<h3><?=hsc($group)?></h3>
 	<table class="table table-striped table-hover mb-5">
 		<thead><tr>
-			<th>Nazwa użytkownika</th>
+			<th class="text-end">Indeks</th>
 			<th>Imię i nazwisko</th>
-			<th>Indeks</th>
-			<th>Wewnętrzny ID</th>
+			<th>Login</th>
+			<th class="text-end d-none d-md-table-cell">Wewnętrzny ID</th>
 		</tr></thead>
 		<tbody>
 	<?php
@@ -37,10 +51,10 @@ while (([$group] = $elderStmt->fetch())) {
 	// benchmark if going through Database::getInstance()->getUser is slower
 	while (([$fullname, $transcript, $username, $lid] = $groupStmt->fetch())) { ?>
 		<tr>
-			<td><?= hsc($username); ?></td>
+			<td class="text-end"><?= hsc($transcript); ?></td>
 			<td><?= hsc($fullname); ?></td>
-			<td><?= hsc($transcript); ?></td>
-			<td><?= hsc($lid); ?></td>
+			<td><?= hsc($username); ?></td>
+			<td class="font-monospace text-end d-none d-md-table-cell"><?= hsc($lid); ?></td>
 		</tr>
 	<?php } ?>
 		</tbody>
@@ -63,17 +77,17 @@ $stmt = Database::getInstance()->runStmt('
 	<h3>Użytkownicy z uprawnieniami starosty:</h3>
 	<table class="table table-striped table-hover">
 		<thead><tr>
-			<th>Nazwa użytkownika</th>
-			<th>Imię i nazwisko</th>
 			<th>Grupa</th>
+			<th>Imię i nazwisko</th>
+			<th>Login</th>
 		</tr></thead>
 		<tbody>
 <?php
 while (([$username, $fullname, $group] = $stmt->fetch())) { ?>
 		<tr>
-			<td><?= hsc($username); ?></td>
-			<td><?= hsc($fullname); ?></td>
 			<td><?= hsc($group); ?></td>
+			<td><?= hsc($fullname); ?></td>
+			<td><?= hsc($username); ?></td>
 		</tr>
 <?php } ?>
 		</tbody>
