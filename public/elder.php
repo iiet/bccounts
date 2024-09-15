@@ -22,21 +22,25 @@ while (([$group] = $elderStmt->fetch())) {
 		<thead><tr>
 			<th>Nazwa użytkownika</th>
 			<th>Imię i nazwisko</th>
-			<th>Numer indeksu</th>
+			<th>Indeks</th>
+			<th>Wewnętrzny ID</th>
 		</tr></thead>
 		<tbody>
 	<?php
 	$groupStmt = Database::getInstance()->runStmt('
-		SELECT fullname, transcript_id, username
+		SELECT fullname, transcript_id, username, legacy_id
 		FROM users
 		JOIN usergroups on users.id == usergroups.user
 		WHERE usergroups."group" = ?
 	', [$group]);
-	while (([$fullname, $transcript, $username] = $groupStmt->fetch())) { ?>
+	// TODO show the fallback ID if applicable.
+	// benchmark if going through Database::getInstance()->getUser is slower
+	while (([$fullname, $transcript, $username, $lid] = $groupStmt->fetch())) { ?>
 		<tr>
 			<td><?= hsc($username); ?></td>
 			<td><?= hsc($fullname); ?></td>
 			<td><?= hsc($transcript); ?></td>
+			<td><?= hsc($lid); ?></td>
 		</tr>
 	<?php } ?>
 		</tbody>
