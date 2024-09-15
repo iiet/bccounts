@@ -32,7 +32,8 @@ $isElder = false;
 while (([$group] = $elderStmt->fetch())) {
 	$isElder = true; ?>
 	<h3><?=hsc($group)?></h3>
-	<table class="table table-striped table-hover mb-5">
+	<!-- Forces the table to overflow in a sensible way on small screens. -->
+	<div class="w-100"><table class="table table-striped table-hover mb-5">
 		<thead><tr>
 			<th class="text-end">Indeks</th>
 			<th>Imię i nazwisko</th>
@@ -58,7 +59,7 @@ while (([$group] = $elderStmt->fetch())) {
 		</tr>
 	<?php } ?>
 		</tbody>
-	</table>
+	</table></div>
 <?php }
 
 if (!$isElder) { ?>
